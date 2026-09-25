@@ -9,6 +9,7 @@ import { Select } from '../../components/ui/FormField';
 import SpeciesFilterSelect from '../charts/SpeciesFilterSelect';
 import LineTrendChart from '../charts/LineTrendChart';
 import { formatDate } from '../../utils/format';
+import { withExistingBarangays } from '../../utils/barangays';
 
 /**
  * Shared shell for the four municipal-wide monitoring overview pages
@@ -24,7 +25,7 @@ export default function AgriOverviewPage({ title, description, columns, chart })
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fishpondApi.list({ status: 'approved' }).then((all) => setBarangays([...new Set(all.map((f) => f.barangay))].sort()));
+    fishpondApi.list({ status: 'approved' }).then((all) => setBarangays(withExistingBarangays(all.map((f) => f.barangay))));
   }, []);
 
   useEffect(() => {

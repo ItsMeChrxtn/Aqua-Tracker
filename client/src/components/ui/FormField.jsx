@@ -1,3 +1,5 @@
+import { NOVELETA_BARANGAYS } from '../../utils/barangays';
+
 export function Field({ label, hint, error, required, children }) {
   return (
     <label className="block">
@@ -30,4 +32,21 @@ export function Select({ children, ...props }) {
 
 export function Textarea(props) {
   return <textarea className={baseInput} rows={3} {...props} />;
+}
+
+// Dropdown of Noveleta barangays. A saved value outside the official list
+// (older free-text data) is kept as an extra option so editing doesn't drop it.
+export function BarangaySelect({ value, placeholder = 'Select barangay', ...props }) {
+  const legacy = value && !NOVELETA_BARANGAYS.includes(value);
+  return (
+    <Select value={value || ''} {...props}>
+      <option value="" disabled={props.required}>
+        {placeholder}
+      </option>
+      {NOVELETA_BARANGAYS.map((b) => (
+        <option key={b} value={b}>{b}</option>
+      ))}
+      {legacy && <option value={value}>{value}</option>}
+    </Select>
+  );
 }

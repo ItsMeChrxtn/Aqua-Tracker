@@ -7,7 +7,7 @@ import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import DataTable from '../../components/ui/DataTable';
-import { Field, Input, Select } from '../../components/ui/FormField';
+import { Field, Input, Select, BarangaySelect } from '../../components/ui/FormField';
 import { ROLE_LABEL } from '../../utils/format';
 import IconButton from '../../components/ui/IconButton';
 
@@ -169,7 +169,7 @@ export default function UserManagement() {
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </Field>
             <Field label="Barangay">
-              <Input value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
+              <BarangaySelect value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
             </Field>
           </div>
           <p className="rounded-xl bg-brand-50 px-3.5 py-2.5 text-xs text-brand-700">

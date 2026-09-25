@@ -5,6 +5,7 @@ import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
 import { Select } from '../../components/ui/FormField';
 import { formatDate } from '../../utils/format';
+import { withExistingBarangays } from '../../utils/barangays';
 
 // Registry of approved fishponds, groupable by barangay — a tabular stand-in
 // for a GIS map (real map integration is out of scope for this system).
@@ -17,7 +18,7 @@ export default function RegisteredList() {
     fishpondApi.list({ status: 'approved' }).then(setFishponds).finally(() => setLoading(false));
   }, []);
 
-  const barangays = useMemo(() => [...new Set(fishponds.map((f) => f.barangay))].sort(), [fishponds]);
+  const barangays = useMemo(() => withExistingBarangays(fishponds.map((f) => f.barangay)), [fishponds]);
   const filtered = barangay ? fishponds.filter((f) => f.barangay === barangay) : fishponds;
 
   if (loading) return <Spinner />;

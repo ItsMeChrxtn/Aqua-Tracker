@@ -5,7 +5,7 @@ import { fishpondApi } from '../../api/fishponds';
 import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { Field, Input } from '../../components/ui/FormField';
+import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
 import Icon from '../../components/ui/Icon';
 
 export default function RegisterFishpond() {
@@ -50,7 +50,7 @@ export default function RegisterFishpond() {
             <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. JDC Tilapia Farm" />
           </Field>
           <Field label="Barangay" required>
-            <Input required value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} placeholder="e.g. San Rafael" />
+            <BarangaySelect required value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
           </Field>
           <Field label="Area Size (m²)">
             <Input type="number" min="0" value={form.areaSize} onChange={(e) => setForm({ ...form, areaSize: e.target.value })} />

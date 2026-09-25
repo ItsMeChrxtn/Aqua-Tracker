@@ -5,7 +5,7 @@ import { authApi } from '../../api/auth';
 import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { Field, Input } from '../../components/ui/FormField';
+import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
 
 export default function ProfileSettings() {
   const { user, refreshUser } = useAuth();
@@ -64,7 +64,7 @@ export default function ProfileSettings() {
               <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </Field>
             <Field label="Barangay">
-              <Input value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
+              <BarangaySelect value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
             </Field>
           </div>
           <div className="flex justify-end">

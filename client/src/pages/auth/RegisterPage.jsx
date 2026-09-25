@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from '../../utils/notify';
 import { useAuth } from '../../auth/AuthContext';
 import { apiErrorMessage } from '../../api/client';
-import { Field, Input } from '../../components/ui/FormField';
+import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import AuthBrandPanel from './AuthBrandPanel';
@@ -67,7 +67,7 @@ export default function RegisterPage() {
                 <Input value={form.phone} onChange={update('phone')} placeholder="09171234567" />
               </Field>
               <Field label="Barangay">
-                <Input value={form.barangay} onChange={update('barangay')} placeholder="San Rafael" />
+                <BarangaySelect value={form.barangay} onChange={update('barangay')} />
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
