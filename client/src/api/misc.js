@@ -3,10 +3,10 @@ import client from './client';
 export const userApi = {
   list: (params) => client.get('/users', { params }).then((r) => r.data.users),
   get: (id) => client.get(`/users/${id}`).then((r) => r.data.user),
-  create: (data) => client.post('/users', data).then((r) => r.data.user),
+  create: (data) => client.post('/users', data).then((r) => r.data),
   update: (id, data) => client.put(`/users/${id}`, data).then((r) => r.data.user),
   remove: (id) => client.delete(`/users/${id}`).then((r) => r.data),
-  resetPassword: (id, newPassword) => client.put(`/users/${id}/reset-password`, { newPassword }).then((r) => r.data),
+  resetPassword: (id) => client.put(`/users/${id}/reset-password`, {}, { loadingText: 'Resetting password…' }).then((r) => r.data),
 };
 
 export const reportApi = {

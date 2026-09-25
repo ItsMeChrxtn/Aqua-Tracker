@@ -33,6 +33,8 @@ const SUCCESS_TEXT = {
 const URL_LOADING_TEXT = [
   [/^\/auth\/login/, 'Signing in…'],
   [/^\/auth\/register/, 'Creating your account…'],
+  [/^\/auth\/verify-email/, 'Verifying…'],
+  [/^\/users$/, 'Creating account & sending email…'],
   [/^\/auth\/change-password/, 'Changing password…'],
   [/\/approve$/, 'Approving…'],
   [/\/reject$/, 'Rejecting…'],
@@ -81,6 +83,9 @@ client.interceptors.response.use(
       if (!window.location.pathname.startsWith('/login')) {
         window.location.href = '/login';
       }
+    }
+    if (error.response?.data?.code === 'PASSWORD_CHANGE_REQUIRED' && window.location.pathname !== '/change-password') {
+      window.location.href = '/change-password';
     }
     return Promise.reject(error);
   }

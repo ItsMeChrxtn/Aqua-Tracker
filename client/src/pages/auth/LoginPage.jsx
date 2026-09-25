@@ -21,10 +21,20 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login(form.email, form.password);
+      if (user.mustChangePassword) {
+        navigate('/change-password', { replace: true });
+        toast.success(`Welcome, ${user.name}! Please set your own password to continue.`);
+        return;
+      }
       const redirectTo = location.state?.from?.pathname || ROLE_HOME[user.role] || '/';
       navigate(redirectTo, { replace: true });
       toast.success(`Welcome back, ${user.name}!`);
     } catch (err) {
+      if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
+        toast.error(err.response.data.message);
+        navigate('/verify-email', { state: { email: err.response.data.email } });
+        return;
+      }
       toast.error(apiErrorMessage(err, 'Login failed'));
     } finally {
       setLoading(false);

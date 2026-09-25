@@ -14,6 +14,16 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, trim: true },
     barangay: { type: String, trim: true },
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+    // Self-registered owners must confirm their email with an OTP. Accounts
+    // created before this field existed have it unset and count as verified.
+    emailVerified: { type: Boolean, default: true },
+    otpHash: { type: String },
+    otpExpiresAt: { type: Date },
+    otpSentAt: { type: Date },
+    otpAttempts: { type: Number, default: 0 },
+    // Set for admin-created accounts and admin password resets: the user must
+    // replace the emailed temporary password before using the system.
+    mustChangePassword: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -25,6 +35,10 @@ userSchema.methods.comparePassword = function comparePassword(candidate) {
 userSchema.methods.toSafeObject = function toSafeObject() {
   const obj = this.toObject();
   delete obj.passwordHash;
+  delete obj.otpHash;
+  delete obj.otpExpiresAt;
+  delete obj.otpSentAt;
+  delete obj.otpAttempts;
   return obj;
 };
 

@@ -17,7 +17,21 @@ const ROLE_BADGE = {
   admin: 'bg-brand-50 text-brand-700 border-brand-300',
 };
 
-const EMPTY_FORM = { name: '', email: '', password: '', role: 'agriculture_staff', phone: '', barangay: '' };
+const EMPTY_FORM = { name: '', email: '', role: 'agriculture_staff', phone: '', barangay: '' };
+
+const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+// Fallback when the email service fails: show the admin the temporary
+// password so they can hand it over another way.
+function showTempPassword(title, user, tempPassword) {
+  toast.info(
+    title,
+    `Give these login details to <b>${escapeHtml(user.name)}</b>:<br><br>
+     Email: <b>${escapeHtml(user.email)}</b><br>
+     Temporary password: <code style="font-size:16px;font-weight:700">${escapeHtml(tempPassword)}</code><br><br>
+     <small>They will be asked to set a new password when they sign in.</small>`
+  );
+}
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
@@ -26,8 +40,6 @@ export default function UserManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [resetTarget, setResetTarget] = useState(null);
-  const [newPassword, setNewPassword] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -40,8 +52,9 @@ export default function UserManagement() {
     e.preventDefault();
     setSaving(true);
     try {
-      await userApi.create(form);
-      toast.success('Account created');
+      const res = await userApi.create(form);
+      if (res.emailSent) toast.success(`Account created. Login details were emailed to ${res.user.email}.`);
+      else showTempPassword('Account created, but the email could not be sent', res.user, res.tempPassword);
       setModalOpen(false);
       setForm(EMPTY_FORM);
       load();
@@ -73,13 +86,16 @@ export default function UserManagement() {
     }
   };
 
-  const submitReset = async (e) => {
-    e.preventDefault();
+  const resetPassword = async (user) => {
+    const ok = await confirm(`A new temporary password will be emailed to ${user.email}, and they must change it on their next sign-in.`, {
+      title: `Reset password for ${user.name}?`,
+      confirmLabel: 'Yes, reset it',
+    });
+    if (!ok) return;
     try {
-      await userApi.resetPassword(resetTarget._id, newPassword);
-      toast.success('Password reset');
-      setResetTarget(null);
-      setNewPassword('');
+      const res = await userApi.resetPassword(user._id);
+      if (res.emailSent) toast.success(`A new temporary password was emailed to ${user.email}.`);
+      else showTempPassword('Password reset, but the email could not be sent', user, res.tempPassword);
     } catch (err) {
       toast.error(apiErrorMessage(err));
     }
@@ -115,7 +131,7 @@ export default function UserManagement() {
                 header: '',
                 render: (u) => (
                   <div className="flex gap-1.5">
-                    <IconButton icon="key" label="Reset Password" tone="brand" onClick={() => setResetTarget(u)} />
+                    <IconButton icon="key" label="Reset Password" tone="brand" onClick={() => resetPassword(u)} />
                     <IconButton
                       icon={u.status === 'active' ? 'userOff' : 'userOn'}
                       label={u.status === 'active' ? 'Deactivate' : 'Activate'}
@@ -141,9 +157,6 @@ export default function UserManagement() {
           <Field label="Email" required>
             <Input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </Field>
-          <Field label="Temporary Password" required hint="At least 6 characters">
-            <Input type="password" minLength={6} required value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          </Field>
           <Field label="Role" required>
             <Select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
               <option value="agriculture_staff">Agriculture Office Staff</option>
@@ -159,21 +172,12 @@ export default function UserManagement() {
               <Input value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
             </Field>
           </div>
+          <p className="rounded-xl bg-brand-50 px-3.5 py-2.5 text-xs text-brand-700">
+            A temporary password will be generated and emailed to this address. They must set their own password on first sign-in.
+          </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
             <Button type="submit" loading={saving}>Create Account</Button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal open={!!resetTarget} onClose={() => setResetTarget(null)} title={`Reset password for ${resetTarget?.name}`}>
-        <form onSubmit={submitReset} className="space-y-4">
-          <Field label="New Password" required hint="At least 6 characters">
-            <Input type="password" minLength={6} required value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-          </Field>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={() => setResetTarget(null)}>Cancel</Button>
-            <Button type="submit">Reset Password</Button>
           </div>
         </form>
       </Modal>

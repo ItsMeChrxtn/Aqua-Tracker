@@ -63,6 +63,13 @@ export function showError(message) {
   base.fire({ icon: 'error', title: 'Oops…', text: message, confirmButtonColor: DANGER });
 }
 
+// Informational alert that stays open until dismissed.
+export function showInfo(title, html) {
+  clearTimeout(fallbackTimer);
+  loading = false;
+  return base.fire({ icon: 'info', title, html });
+}
+
 // Promise-based replacement for window.confirm.
 export async function confirm(message, { title = 'Are you sure?', confirmLabel = 'Yes, delete it', danger = true } = {}) {
   clearTimeout(fallbackTimer);

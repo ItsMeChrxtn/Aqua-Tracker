@@ -7,6 +7,8 @@ import { ROLE_HOME } from './utils/navConfig';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import VerifyEmailPage from './pages/auth/VerifyEmailPage';
+import ChangePasswordRequired from './pages/auth/ChangePasswordRequired';
 import NotFound from './pages/NotFound';
 
 import OwnerDashboard from './pages/owner/OwnerDashboard';
@@ -56,6 +58,10 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/change-password" element={<ChangePasswordRequired />} />
+          </Route>
           <Route path="/" element={<Home />} />
 
           <Route element={<ProtectedRoute roles={['fishpond_owner']} />}>

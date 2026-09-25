@@ -17,6 +17,11 @@ export default function ProtectedRoute({ roles }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Accounts with an emailed temporary password must set their own first.
+  if (user.mustChangePassword && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />;
+  }
+
   if (roles && !roles.includes(user.role)) {
     return <Navigate to="/" replace />;
   }

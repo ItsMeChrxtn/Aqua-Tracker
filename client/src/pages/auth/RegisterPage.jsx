@@ -6,7 +6,6 @@ import { apiErrorMessage } from '../../api/client';
 import { Field, Input } from '../../components/ui/FormField';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
-import { ROLE_HOME } from '../../utils/navConfig';
 import AuthBrandPanel from './AuthBrandPanel';
 
 const EMPTY = { name: '', email: '', password: '', confirmPassword: '', phone: '', barangay: '' };
@@ -27,9 +26,9 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const user = await register(form);
-      toast.success('Account created! Register your first fishpond to get started.');
-      navigate(ROLE_HOME[user.role], { replace: true });
+      const res = await register(form);
+      toast.success(res.message);
+      navigate('/verify-email', { state: { email: res.email } });
     } catch (err) {
       toast.error(apiErrorMessage(err, 'Registration failed'));
     } finally {

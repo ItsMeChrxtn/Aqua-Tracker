@@ -23,21 +23,26 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    const res = await authApi.login({ email, password });
+  const startSession = useCallback((res) => {
     localStorage.setItem('aquatrack_token', res.token);
     localStorage.setItem('aquatrack_user', JSON.stringify(res.user));
     setUser(res.user);
     return res.user;
   }, []);
 
-  const register = useCallback(async (data) => {
-    const res = await authApi.register(data);
-    localStorage.setItem('aquatrack_token', res.token);
-    localStorage.setItem('aquatrack_user', JSON.stringify(res.user));
-    setUser(res.user);
-    return res.user;
-  }, []);
+  const login = useCallback(
+    async (email, password) => startSession(await authApi.login({ email, password })),
+    [startSession]
+  );
+
+  // Registration doesn't sign in: the account must first be verified with
+  // the emailed OTP (see verifyEmail).
+  const register = useCallback((data) => authApi.register(data), []);
+
+  const verifyEmail = useCallback(
+    async (email, otp) => startSession(await authApi.verifyEmail({ email, otp })),
+    [startSession]
+  );
 
   const logout = useCallback(() => {
     localStorage.removeItem('aquatrack_token');
@@ -53,7 +58,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyEmail, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

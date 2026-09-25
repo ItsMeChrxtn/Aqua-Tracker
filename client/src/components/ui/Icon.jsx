@@ -5,7 +5,7 @@ import {
   ImagePlus, ShieldCheck, ShieldAlert, CheckCircle2, AlertTriangle, Clock,
   ArrowRight, Loader2, Droplets, Waves, Package, CircleDollarSign, BarChart3,
   Landmark, Smartphone, ClipboardCheck, Sparkles, Quote, KeyRound, UserX, UserCheck,
-  PackagePlus, PackageMinus, CheckCheck, ChevronLeft, ChevronRight,
+  PackagePlus, PackageMinus, CheckCheck, ChevronLeft, ChevronRight, Mail,
 } from 'lucide-react';
 
 const REGISTRY = {
@@ -60,6 +60,7 @@ const REGISTRY = {
   checkAll: CheckCheck,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
+  mail: Mail,
 };
 
 export default function Icon({ name, className = 'w-5 h-5', ...props }) {

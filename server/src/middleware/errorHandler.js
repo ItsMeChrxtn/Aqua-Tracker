@@ -1,7 +1,11 @@
 class ApiError extends Error {
-  constructor(statusCode, message) {
+  // `errorCode` is a machine-readable reason the client can branch on
+  // (e.g. EMAIL_NOT_VERIFIED); `extra` is merged into the JSON response.
+  constructor(statusCode, message, errorCode, extra) {
     super(message);
     this.statusCode = statusCode;
+    this.errorCode = errorCode;
+    this.extra = extra;
   }
 }
 
@@ -38,6 +42,8 @@ function errorHandler(err, req, res, next) {
   res.status(statusCode).json({
     success: false,
     message,
+    code: err.errorCode,
+    ...err.extra,
     stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
   });
 }
