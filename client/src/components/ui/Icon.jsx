@@ -1,0 +1,60 @@
+import {
+  LayoutDashboard, List, Plus, Fish, Skull, TrendingUp, HeartPulse, Wheat,
+  FileText, Settings, Users, ClipboardList, Download, Bell, LogOut, Menu, X,
+  Pencil, Trash2, Check, XCircle, Filter, ChevronDown, Search, MapPin,
+  ImagePlus, ShieldCheck, ShieldAlert, CheckCircle2, AlertTriangle, Clock,
+  ArrowRight, Loader2, Droplets, Waves, Package, CircleDollarSign, BarChart3,
+  Landmark, Smartphone, ClipboardCheck, Sparkles, Quote,
+} from 'lucide-react';
+
+const REGISTRY = {
+  dashboard: LayoutDashboard,
+  list: List,
+  plus: Plus,
+  fish: Fish,
+  mortality: Skull,
+  growth: TrendingUp,
+  survival: HeartPulse,
+  harvest: Wheat,
+  report: FileText,
+  settings: Settings,
+  users: Users,
+  clipboard: ClipboardList,
+  download: Download,
+  bell: Bell,
+  logout: LogOut,
+  menu: Menu,
+  close: X,
+  edit: Pencil,
+  trash: Trash2,
+  check: Check,
+  xCircle: XCircle,
+  filter: Filter,
+  chevronDown: ChevronDown,
+  search: Search,
+  location: MapPin,
+  image: ImagePlus,
+  shieldCheck: ShieldCheck,
+  shieldAlert: ShieldAlert,
+  success: CheckCircle2,
+  warning: AlertTriangle,
+  clock: Clock,
+  arrowRight: ArrowRight,
+  spinner: Loader2,
+  freshwater: Droplets,
+  saltwater: Waves,
+  inventory: Package,
+  sales: CircleDollarSign,
+  analytics: BarChart3,
+  government: Landmark,
+  mobile: Smartphone,
+  approval: ClipboardCheck,
+  sparkles: Sparkles,
+  quote: Quote,
+};
+
+export default function Icon({ name, className = 'w-5 h-5', ...props }) {
+  const Cmp = REGISTRY[name];
+  if (!Cmp) return null;
+  return <Cmp className={className} {...props} />;
+}
