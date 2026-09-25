@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../../utils/notify';
 import { settingsApi } from '../../api/misc';
 import { apiErrorMessage } from '../../api/client';
 import Card from '../ui/Card';

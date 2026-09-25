@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { startLoading, finishLoading } from '../components/feedback/feedbackStore';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -11,15 +12,69 @@ export function assetUrl(path) {
   return API_URL.replace(/\/api\/?$/, '') + path;
 }
 
+// Every create/update/delete shows the centered loading modal. Requests can
+// opt out with `{ silent: true }` or set their own text with `{ loadingText }`.
+const SILENT_URLS = [/^\/notifications/];
+
+const LOADING_TEXT = {
+  post: 'Creating…',
+  put: 'Updating…',
+  patch: 'Updating…',
+  delete: 'Deleting…',
+};
+
+const SUCCESS_TEXT = {
+  post: 'Created successfully.',
+  put: 'Updated successfully.',
+  patch: 'Updated successfully.',
+  delete: 'Deleted successfully.',
+};
+
+const URL_LOADING_TEXT = [
+  [/^\/auth\/login/, 'Signing in…'],
+  [/^\/auth\/register/, 'Creating your account…'],
+  [/^\/auth\/change-password/, 'Changing password…'],
+  [/\/approve$/, 'Approving…'],
+  [/\/reject$/, 'Rejecting…'],
+];
+
+function isTracked(config) {
+  const method = config.method?.toLowerCase();
+  if (config.silent || !LOADING_TEXT[method]) return false;
+  return !SILENT_URLS.some((re) => re.test(config.url || ''));
+}
+
+function loadingTextFor(config) {
+  if (config.loadingText) return config.loadingText;
+  const match = URL_LOADING_TEXT.find(([re]) => re.test(config.url || ''));
+  return match ? match[1] : LOADING_TEXT[config.method.toLowerCase()];
+}
+
+export function apiErrorMessage(error, fallback = 'Something went wrong') {
+  return error?.response?.data?.message || error?.message || fallback;
+}
+
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('aquatrack_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (isTracked(config)) {
+    config.tracked = true;
+    startLoading(loadingTextFor(config));
+  }
   return config;
 });
 
 client.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    if (res.config.tracked) {
+      finishLoading({ type: 'success', message: SUCCESS_TEXT[res.config.method.toLowerCase()] });
+    }
+    return res;
+  },
   (error) => {
+    if (error.config?.tracked) {
+      finishLoading({ type: 'error', message: apiErrorMessage(error) });
+    }
     if (error.response?.status === 401) {
       localStorage.removeItem('aquatrack_token');
       localStorage.removeItem('aquatrack_user');
@@ -30,9 +85,5 @@ client.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export function apiErrorMessage(error, fallback = 'Something went wrong') {
-  return error?.response?.data?.message || error?.message || fallback;
-}
 
 export default client;

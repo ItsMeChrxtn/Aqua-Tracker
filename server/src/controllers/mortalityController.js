@@ -25,7 +25,7 @@ const onCreated = async ({ cycle, req }) => {
       user: cycle.fishpond.owner,
       fishpond: cycle.fishpond._id,
       type: 'high_mortality',
-      message: `High mortality alert: ${cycle.fishpond.name} (${cycle.species.name}) has lost ${mortalityPercent.toFixed(1)}% of stock.`,
+      message: `High mortality alert: ${cycle.fishpond.name} (${cycle.species ? cycle.species.name : 'Unknown species'}) has lost ${mortalityPercent.toFixed(1)}% of stock.`,
     });
   }
 };

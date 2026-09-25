@@ -38,7 +38,7 @@ const onCreated = async ({ record, cycle }) => {
       user: cycle.fishpond.owner,
       fishpond: cycle.fishpond._id,
       type: 'near_harvest',
-      message: `${cycle.fishpond.name} (${cycle.species.name}) is ${label} — estimated ${estimate.estimatedHarvestKg} kg.`,
+      message: `${cycle.fishpond.name} (${cycle.species ? cycle.species.name : 'Unknown species'}) is ${label} — estimated ${estimate.estimatedHarvestKg} kg.`,
     });
   }
 };

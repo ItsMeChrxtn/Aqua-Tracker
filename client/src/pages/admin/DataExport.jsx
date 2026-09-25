@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../../utils/notify';
 import { adminApi, reportApi } from '../../api/misc';
 import { downloadFile } from '../../utils/download';
 import Card from '../../components/ui/Card';

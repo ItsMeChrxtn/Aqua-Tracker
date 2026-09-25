@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../../utils/notify';
 import { useAuth } from '../../auth/AuthContext';
 import { apiErrorMessage } from '../../api/client';
 import { Field, Input } from '../../components/ui/FormField';

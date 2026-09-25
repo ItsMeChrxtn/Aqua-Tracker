@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { notificationApi } from '../../api/misc';
 import { formatDateTime } from '../../utils/format';
 import Icon from '../ui/Icon';
+import IconButton from '../ui/IconButton';
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -62,9 +63,7 @@ export default function NotificationBell() {
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <p className="text-sm font-semibold text-slate-700">Notifications</p>
             {unreadCount > 0 && (
-              <button onClick={markAllRead} className="text-xs font-medium text-brand-600 hover:underline">
-                Mark all read
-              </button>
+              <IconButton icon="checkAll" label="Mark all as read" tone="brand" onClick={markAllRead} />
             )}
           </div>
           <div className="max-h-80 overflow-y-auto">

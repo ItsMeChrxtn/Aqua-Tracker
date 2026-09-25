@@ -148,6 +148,157 @@ body {
 .blob-b { animation: blobMoveB 20s ease-in-out infinite; }
 .blob-c { animation: blobMoveC 18s ease-in-out infinite; }
 
+/* ---------- SweetAlert2 notifications ---------- */
+
+.aq-swal {
+  font-family: var(--font-sans);
+  border-radius: 1rem;
+}
+
+.aq-swal .swal2-title {
+  font-size: 1.25rem;
+  color: #0f172a;
+}
+
+.aq-swal .swal2-html-container {
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.aq-swal .swal2-styled {
+  border-radius: 0.75rem;
+  font-weight: 600;
+}
+
+.aq-swal__title {
+  margin: 14px 0 2px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.aq-swal__sub {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+/* ---------- Jumping fish loader ---------- */
+
+.fish-loader {
+  --fish-cycle: 1.5s;
+  position: relative;
+  width: 160px;
+  height: 112px;
+  margin: 0 auto;
+}
+
+/* Everything above the water line; clips the fish once it dives back in. */
+.fish-loader__sky {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 86px;
+  overflow: hidden;
+}
+
+.fish-loader__fish {
+  position: absolute;
+  top: 0;
+  left: 0;
+  offset-path: path('M 24 104 Q 80 -44 136 104');
+  offset-rotate: auto;
+  animation: fishJump var(--fish-cycle) linear infinite;
+}
+
+@keyframes fishJump {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+.fish-loader__water {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32px;
+  overflow: hidden;
+  border-radius: 0 0 14px 14px;
+}
+
+.fish-loader__water svg {
+  width: 200%;
+  height: 100%;
+  animation: waterFlow 2.4s linear infinite;
+}
+
+@keyframes waterFlow {
+  from { transform: translateX(0); }
+  to { transform: translateX(-25%); }
+}
+
+.fish-loader__splash {
+  position: absolute;
+  top: 80px;
+  width: 34px;
+  height: 9px;
+  margin-left: -17px;
+  border: 2px solid #3f938d;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.fish-loader__splash--in {
+  left: 30px;
+  animation: splashIn var(--fish-cycle) ease-out infinite;
+}
+
+.fish-loader__splash--out {
+  left: 130px;
+  animation: splashOut var(--fish-cycle) ease-out infinite;
+}
+
+@keyframes splashIn {
+  0% { opacity: 0.9; transform: scale(0.3); }
+  35% { opacity: 0; transform: scale(1.5); }
+  100% { opacity: 0; }
+}
+
+@keyframes splashOut {
+  0%, 80% { opacity: 0; transform: scale(0.3); }
+  82% { opacity: 0.9; transform: scale(0.3); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+
+.fish-loader__drop {
+  position: absolute;
+  top: 78px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #6cb2ac;
+  opacity: 0;
+  animation: dropPop var(--fish-cycle) ease-out infinite;
+}
+
+.fish-loader__drop--1 { left: 122px; --dx: -10px; --dy: -18px; }
+.fish-loader__drop--2 { left: 130px; --dx: 0px; --dy: -24px; }
+.fish-loader__drop--3 { left: 138px; --dx: 10px; --dy: -16px; }
+
+@keyframes dropPop {
+  0%, 80% { opacity: 0; transform: translate(0, 0); }
+  84% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fish-loader__fish {
+    animation-duration: 3s;
+  }
+  .fish-loader__water svg {
+    animation: none;
+  }
+}
+
 .animate-fade-in-up {
   animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

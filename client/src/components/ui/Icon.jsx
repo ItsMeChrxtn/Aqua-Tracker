@@ -4,7 +4,8 @@ import {
   Pencil, Trash2, Check, XCircle, Filter, ChevronDown, Search, MapPin,
   ImagePlus, ShieldCheck, ShieldAlert, CheckCircle2, AlertTriangle, Clock,
   ArrowRight, Loader2, Droplets, Waves, Package, CircleDollarSign, BarChart3,
-  Landmark, Smartphone, ClipboardCheck, Sparkles, Quote,
+  Landmark, Smartphone, ClipboardCheck, Sparkles, Quote, KeyRound, UserX, UserCheck,
+  PackagePlus, PackageMinus, CheckCheck, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
 const REGISTRY = {
@@ -51,6 +52,14 @@ const REGISTRY = {
   approval: ClipboardCheck,
   sparkles: Sparkles,
   quote: Quote,
+  key: KeyRound,
+  userOff: UserX,
+  userOn: UserCheck,
+  restock: PackagePlus,
+  useStock: PackageMinus,
+  checkAll: CheckCheck,
+  chevronLeft: ChevronLeft,
+  chevronRight: ChevronRight,
 };
 
 export default function Icon({ name, className = 'w-5 h-5', ...props }) {

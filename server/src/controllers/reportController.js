@@ -34,7 +34,7 @@ const ownerSummary = asyncHandler(async (req, res) => {
       cycleId: cycle._id,
       fishpondId: cycle.fishpond._id,
       fishpondName: cycle.fishpond.name,
-      species: cycle.species.name,
+      species: cycle.species ? cycle.species.name : 'Unknown species',
       stocked: cycle.initialCount,
       remaining: estimate.currentCount,
       survivalRate: estimate.survivalRate,
@@ -114,8 +114,8 @@ const municipalSummary = asyncHandler(async (req, res) => {
       fishpondId: cycle.fishpond._id,
       fishpondName: cycle.fishpond.name,
       owner: cycle.fishpond.owner ? cycle.fishpond.owner.name : 'Unknown',
-      species: cycle.species.name,
-      speciesId: cycle.species._id,
+      species: cycle.species ? cycle.species.name : 'Unknown species',
+      speciesId: cycle.species ? cycle.species._id : null,
       barangay: cycle.fishpond.barangay,
       batchName: cycle.batchName,
       stockingDate: cycle.stockingDate,
@@ -134,7 +134,8 @@ const municipalSummary = asyncHandler(async (req, res) => {
     if (estimate.isHighMortality) highMortality.push(row);
     if (['near_harvest', 'ready_for_harvest'].includes(estimate.readinessStatus)) nearHarvest.push(row);
 
-    speciesProductionMap[cycle.species.name] = (speciesProductionMap[cycle.species.name] || 0) + estimate.estimatedHarvestKg;
+    const speciesName = cycle.species ? cycle.species.name : 'Unknown species';
+    speciesProductionMap[speciesName] = (speciesProductionMap[speciesName] || 0) + estimate.estimatedHarvestKg;
   }
 
   const startOfMonth = new Date();
@@ -204,7 +205,8 @@ const adminSummary = asyncHandler(async (req, res) => {
     if (!cycle.fishpond) continue;
     const estimate = await computeHarvestEstimate(cycle);
     totalEstimatedHarvestKg += estimate.estimatedHarvestKg;
-    speciesProductionMap[cycle.species.name] = (speciesProductionMap[cycle.species.name] || 0) + estimate.estimatedHarvestKg;
+    const speciesName = cycle.species ? cycle.species.name : 'Unknown species';
+    speciesProductionMap[speciesName] = (speciesProductionMap[speciesName] || 0) + estimate.estimatedHarvestKg;
   }
 
   const twelveMonthsAgo = new Date();

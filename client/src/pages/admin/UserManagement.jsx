@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast, { confirm } from '../../utils/notify';
 import { userApi } from '../../api/misc';
 import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
@@ -9,6 +9,7 @@ import Modal from '../../components/ui/Modal';
 import DataTable from '../../components/ui/DataTable';
 import { Field, Input, Select } from '../../components/ui/FormField';
 import { ROLE_LABEL } from '../../utils/format';
+import IconButton from '../../components/ui/IconButton';
 
 const ROLE_BADGE = {
   fishpond_owner: 'bg-sky-50 text-sky-700 border-sky-300',
@@ -62,7 +63,7 @@ export default function UserManagement() {
   };
 
   const removeUser = async (user) => {
-    if (!window.confirm(`Delete account for ${user.name}?`)) return;
+    if (!(await confirm(`Delete account for ${user.name}?`))) return;
     try {
       await userApi.remove(user._id);
       toast.success('Account deleted');
@@ -113,10 +114,15 @@ export default function UserManagement() {
                 key: 'actions',
                 header: '',
                 render: (u) => (
-                  <div className="flex gap-3 text-xs font-medium">
-                    <button className="text-brand-600 hover:underline" onClick={() => setResetTarget(u)}>Reset Password</button>
-                    <button className="text-amber-600 hover:underline" onClick={() => toggleStatus(u)}>{u.status === 'active' ? 'Deactivate' : 'Activate'}</button>
-                    <button className="text-rose-600 hover:underline" onClick={() => removeUser(u)}>Delete</button>
+                  <div className="flex gap-1.5">
+                    <IconButton icon="key" label="Reset Password" tone="brand" onClick={() => setResetTarget(u)} />
+                    <IconButton
+                      icon={u.status === 'active' ? 'userOff' : 'userOn'}
+                      label={u.status === 'active' ? 'Deactivate' : 'Activate'}
+                      tone={u.status === 'active' ? 'warning' : 'success'}
+                      onClick={() => toggleStatus(u)}
+                    />
+                    <IconButton icon="trash" label="Delete" tone="danger" onClick={() => removeUser(u)} />
                   </div>
                 ),
               },

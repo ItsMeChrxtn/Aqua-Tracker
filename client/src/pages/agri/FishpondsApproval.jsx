@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../../utils/notify';
 import { fishpondApi } from '../../api/fishponds';
 import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
@@ -9,6 +9,7 @@ import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import { Select, Field, Textarea } from '../../components/ui/FormField';
 import { formatDate, STATUS_BADGE_CLASS } from '../../utils/format';
+import IconButton from '../../components/ui/IconButton';
 
 export default function FishpondsApproval() {
   const [fishponds, setFishponds] = useState([]);
@@ -82,13 +83,9 @@ export default function FishpondsApproval() {
                 header: '',
                 render: (f) =>
                   f.status === 'pending' && (
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="secondary" loading={busyId === f._id} onClick={() => approve(f._id)}>
-                        Approve
-                      </Button>
-                      <Button size="sm" variant="danger" onClick={() => setRejectTarget(f)}>
-                        Reject
-                      </Button>
+                    <div className="flex gap-1.5">
+                      <IconButton icon="check" label="Approve" tone="success" loading={busyId === f._id} onClick={() => approve(f._id)} />
+                      <IconButton icon="close" label="Reject" tone="danger" onClick={() => setRejectTarget(f)} />
                     </div>
                   ),
               },

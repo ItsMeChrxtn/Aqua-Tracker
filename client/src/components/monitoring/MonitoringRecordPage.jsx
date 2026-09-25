@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast, { confirm } from '../../utils/notify';
 import { cycleApi } from '../../api/fishponds';
 import { useOwnerFishponds } from '../../hooks/useOwnerFishponds';
 import { useSpeciesList } from '../../hooks/useSpeciesList';
@@ -13,6 +13,7 @@ import { Field, Input, Select, Textarea } from '../ui/FormField';
 import LineTrendChart from '../charts/LineTrendChart';
 import SpeciesFilterSelect from '../charts/SpeciesFilterSelect';
 import { formatDate } from '../../utils/format';
+import IconButton from '../ui/IconButton';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -97,7 +98,7 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
   };
 
   const removeRecord = async (id) => {
-    if (!window.confirm('Delete this record?')) return;
+    if (!(await confirm('Delete this record?'))) return;
     await api.remove(id);
     toast.success('Record deleted');
     loadRecords();
@@ -117,9 +118,7 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
       key: 'actions',
       header: '',
       render: (r) => (
-        <button onClick={() => removeRecord(r._id)} className="text-xs font-medium text-rose-500 hover:underline">
-          Delete
-        </button>
+        <IconButton icon="trash" label="Delete" tone="danger" onClick={() => removeRecord(r._id)} />
       ),
     },
   ];

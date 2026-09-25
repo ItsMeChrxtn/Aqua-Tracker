@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../../utils/notify';
 import { fishpondApi, cycleApi } from '../../api/fishponds';
 import { apiErrorMessage } from '../../api/client';
 import { useSpeciesList } from '../../hooks/useSpeciesList';

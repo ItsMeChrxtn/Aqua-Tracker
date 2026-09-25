@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { activityLogApi } from '../../api/misc';
 import Card from '../../components/ui/Card';
 import DataTable from '../../components/ui/DataTable';
-import Button from '../../components/ui/Button';
 import { Select } from '../../components/ui/FormField';
 import { formatDateTime } from '../../utils/format';
+import IconButton from '../../components/ui/IconButton';
 
 const ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT', 'REGISTER', 'EXPORT'];
 
@@ -62,9 +62,9 @@ export default function ActivityLogs() {
         </div>
         {pages > 1 && (
           <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3">
-            <Button size="sm" variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</Button>
+            <IconButton icon="chevronLeft" label="Previous page" disabled={page <= 1} onClick={() => setPage((p) => p - 1)} />
             <span className="text-xs text-slate-400">Page {page} of {pages}</span>
-            <Button size="sm" variant="secondary" disabled={page >= pages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+            <IconButton icon="chevronRight" label="Next page" disabled={page >= pages} onClick={() => setPage((p) => p + 1)} />
           </div>
         )}
       </Card>

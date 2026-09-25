@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast, { confirm } from '../../utils/notify';
 import { speciesApi } from '../../api/species';
 import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
@@ -10,6 +10,7 @@ import DataTable from '../../components/ui/DataTable';
 import Icon from '../../components/ui/Icon';
 import { Field, Input, Select, Textarea } from '../../components/ui/FormField';
 import { WATER_TYPE_LABEL } from '../../utils/format';
+import IconButton from '../../components/ui/IconButton';
 
 const EMPTY_FORM = {
   name: '',
@@ -87,7 +88,7 @@ export default function SpeciesManagement() {
   };
 
   const remove = async (s) => {
-    if (!window.confirm(`Delete species "${s.name}"? Existing production cycles referencing it will be unaffected.`)) return;
+    if (!(await confirm(`Delete species "${s.name}"? Existing production cycles referencing it will be unaffected.`))) return;
     try {
       await speciesApi.remove(s._id);
       toast.success('Species deleted');
@@ -134,9 +135,9 @@ export default function SpeciesManagement() {
                 key: 'actions',
                 header: '',
                 render: (s) => (
-                  <div className="flex gap-3 text-xs font-medium">
-                    <button className="text-brand-600 hover:underline" onClick={() => openEdit(s)}>Edit</button>
-                    <button className="text-rose-600 hover:underline" onClick={() => remove(s)}>Delete</button>
+                  <div className="flex gap-1.5">
+                    <IconButton icon="edit" label="Edit" tone="brand" onClick={() => openEdit(s)} />
+                    <IconButton icon="trash" label="Delete" tone="danger" onClick={() => remove(s)} />
                   </div>
                 ),
               },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast, { confirm } from '../../utils/notify';
 import { inventoryApi } from '../../api/inventory';
 import { apiErrorMessage } from '../../api/client';
 import { useOwnerFishponds } from '../../hooks/useOwnerFishponds';
@@ -13,6 +13,7 @@ import Modal from '../../components/ui/Modal';
 import Spinner from '../../components/ui/Spinner';
 import { Field, Input, Select, Textarea } from '../../components/ui/FormField';
 import { formatNumber } from '../../utils/format';
+import IconButton from '../../components/ui/IconButton';
 
 const EMPTY_FORM = { name: '', category: 'feed', unit: 'kg', currentStock: '', reorderLevel: '', notes: '' };
 
@@ -77,7 +78,7 @@ export default function InventoryManagement() {
   };
 
   const removeItem = async (item) => {
-    if (!window.confirm(`Delete "${item.name}" from inventory?`)) return;
+    if (!(await confirm(`Delete "${item.name}" from inventory?`))) return;
     await inventoryApi.remove(item._id);
     toast.success('Item deleted');
     load();
@@ -138,10 +139,10 @@ export default function InventoryManagement() {
                   key: 'actions',
                   header: '',
                   render: (i) => (
-                    <div className="flex gap-3 text-xs font-medium">
-                      <button className="text-emerald-600 hover:underline" onClick={() => setAdjustTarget({ item: i, type: 'restock' })}>Restock</button>
-                      <button className="text-amber-600 hover:underline" onClick={() => setAdjustTarget({ item: i, type: 'use' })}>Use</button>
-                      <button className="text-rose-600 hover:underline" onClick={() => removeItem(i)}>Delete</button>
+                    <div className="flex gap-1.5">
+                      <IconButton icon="restock" label="Restock" tone="success" onClick={() => setAdjustTarget({ item: i, type: 'restock' })} />
+                      <IconButton icon="useStock" label="Use" tone="warning" onClick={() => setAdjustTarget({ item: i, type: 'use' })} />
+                      <IconButton icon="trash" label="Delete" tone="danger" onClick={() => removeItem(i)} />
                     </div>
                   ),
                 },

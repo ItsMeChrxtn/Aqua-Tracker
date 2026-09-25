@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast, { confirm } from '../../utils/notify';
 import { cycleApi, salesApi } from '../../api/fishponds';
 import { apiErrorMessage } from '../../api/client';
 import { useOwnerFishponds } from '../../hooks/useOwnerFishponds';
@@ -14,6 +14,7 @@ import { Field, Input, Select, Textarea } from '../../components/ui/FormField';
 import LineTrendChart from '../../components/charts/LineTrendChart';
 import SpeciesFilterSelect from '../../components/charts/SpeciesFilterSelect';
 import { formatDate, formatNumber } from '../../utils/format';
+import IconButton from '../../components/ui/IconButton';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const EMPTY_FORM = { date: todayISO(), buyerName: '', quantityKg: '', pricePerKg: '', notes: '' };
@@ -86,7 +87,7 @@ export default function SalesRecords() {
   };
 
   const removeRecord = async (id) => {
-    if (!window.confirm('Delete this sales record?')) return;
+    if (!(await confirm('Delete this sales record?'))) return;
     await salesApi.remove(id);
     toast.success('Sales record deleted');
     loadRecords();
@@ -146,7 +147,7 @@ export default function SalesRecords() {
                 key: 'actions',
                 header: '',
                 render: (r) => (
-                  <button onClick={() => removeRecord(r._id)} className="text-xs font-medium text-rose-500 hover:underline">Delete</button>
+                  <IconButton icon="trash" label="Delete" tone="danger" onClick={() => removeRecord(r._id)} />
                 ),
               },
             ]}

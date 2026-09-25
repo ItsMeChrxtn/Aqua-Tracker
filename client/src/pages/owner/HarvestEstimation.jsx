@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../../utils/notify';
 import { cycleApi, harvestApi } from '../../api/fishponds';
 import { reportApi } from '../../api/misc';
 import { apiErrorMessage } from '../../api/client';
