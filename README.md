@@ -68,7 +68,7 @@ The app runs at `http://localhost:5173` and proxies `/api` and `/uploads` reques
 2. Go to **Species Management** and add at least one species (name, water type, recommended harvest weight range). Nothing else in the system works until at least one species exists.
 3. Go to **User & Role Management** and create an **Agriculture Office Staff** account (used to approve fishpond registrations).
 4. Log out, then register a **Fishpond Owner** account from `/register`.
-5. As the owner, register a fishpond (**Fishpond Management → Register Fishpond**) — it starts `pending`.
+5. As the owner, register a fishpond (**Fishpond List → Register Fishpond**) — it starts `pending`.
 6. Log in as the Agriculture Office Staff account and approve it under **Fishponds**.
 7. Back as the owner, open the fishpond's detail page and **Start New Cycle** (pick species, stocking date, initial count).
 8. Use **Monitoring → Growth/Mortality/Feeding/Stocking Records** to log data over time — the dashboard, Survival Monitoring, and Harvest Estimation pages populate from these records.

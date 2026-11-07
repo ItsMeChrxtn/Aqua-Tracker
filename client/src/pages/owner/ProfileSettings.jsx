@@ -6,6 +6,7 @@ import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
+import { PASSWORD_MIN, PASSWORD_MAX, PASSWORD_HINT } from '../../utils/limits';
 
 export default function ProfileSettings() {
   const { user, refreshUser } = useAuth();
@@ -79,8 +80,8 @@ export default function ProfileSettings() {
             <Input type="password" required value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="New Password" required hint="At least 6 characters">
-              <Input type="password" minLength={6} required value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} />
+            <Field label="New Password" required hint={PASSWORD_HINT}>
+              <Input type="password" minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} required value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} />
             </Field>
             <Field label="Confirm New Password" required>
               <Input type="password" required value={pw.confirmPassword} onChange={(e) => setPw({ ...pw, confirmPassword: e.target.value })} />

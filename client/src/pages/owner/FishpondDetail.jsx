@@ -12,7 +12,7 @@ import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
 import { Field, Input, Select } from '../../components/ui/FormField';
-import { formatDate, STATUS_BADGE_CLASS, WATER_TYPE_LABEL } from '../../utils/format';
+import { formatArea, formatCapacity, formatDate, STATUS_BADGE_CLASS, WATER_TYPE_LABEL } from '../../utils/format';
 
 export default function FishpondDetail() {
   const { id } = useParams();
@@ -63,7 +63,7 @@ export default function FishpondDetail() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">{fishpond.name}</h2>
           <p className="flex items-center gap-1 text-sm text-slate-600">
-            <Icon name="location" className="h-4 w-4" /> {fishpond.barangay} · {fishpond.areaSize ? `${fishpond.areaSize} m²` : 'Area not set'}
+            <Icon name="location" className="h-4 w-4" /> {fishpond.barangay} · {formatArea(fishpond.areaSize, 'Area not set')} · {formatCapacity(fishpond.capacity, 'Capacity not set')}
           </p>
         </div>
         <Badge className={STATUS_BADGE_CLASS[fishpond.status]}>{fishpond.status}</Badge>

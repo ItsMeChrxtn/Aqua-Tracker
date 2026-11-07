@@ -9,13 +9,18 @@ import Button from '../ui/Button';
 import DataTable from '../ui/DataTable';
 import EmptyState from '../ui/EmptyState';
 import Modal from '../ui/Modal';
-import { Field, Input, Select, Textarea } from '../ui/FormField';
+import { Field, Input, Select, SelectWithOther, Textarea } from '../ui/FormField';
 import LineTrendChart from '../charts/LineTrendChart';
 import SpeciesFilterSelect from '../charts/SpeciesFilterSelect';
 import { formatDate } from '../../utils/format';
 import IconButton from '../ui/IconButton';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
+
+function batchLabel(cycle) {
+  if (!cycle) return '—';
+  return cycle.batchName || `Unnamed batch (${formatDate(cycle.stockingDate)})`;
+}
 
 function buildInitialForm(fields) {
   return fields.reduce((acc, f) => ({ ...acc, [f.name]: f.type === 'date' ? todayISO() : '' }), {});
@@ -28,12 +33,13 @@ function buildInitialForm(fields) {
  * narrowed to a single species, per the "chart shows history + species
  * filter" requirement.
  */
-export default function MonitoringRecordPage({ title, description, api, fields, chartMetricKey, chartLabel, emptyIcon = 'clipboard' }) {
+export default function MonitoringRecordPage({ title, description, api, fields, chartMetricKey, chartLabel, emptyIcon = 'clipboard', addLabel }) {
   const { fishponds, loading: loadingFishponds } = useOwnerFishponds();
   const { species } = useSpeciesList();
 
   const [fishpondId, setFishpondId] = useState('');
   const [speciesFilter, setSpeciesFilter] = useState('');
+  const [batchFilter, setBatchFilter] = useState('');
   const [records, setRecords] = useState([]);
   const [cycles, setCycles] = useState([]);
   const [activeCycles, setActiveCycles] = useState([]);
@@ -104,16 +110,19 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
     loadRecords();
   };
 
+  const visibleRecords = batchFilter ? records.filter((r) => r.cycle?._id === batchFilter) : records;
+
   const chartData = chartMetricKey
-    ? records.map((r) => ({ x: formatDate(r.date), [chartMetricKey]: r[chartMetricKey] }))
+    ? visibleRecords.map((r) => ({ x: formatDate(r.date), [chartMetricKey]: r[chartMetricKey] }))
     : [];
 
   const columns = [
     { key: 'date', header: 'Date', render: (r) => formatDate(r.date) },
+    { key: 'species', header: 'Species', render: (r) => r.cycle?.species?.name || '—' },
     ...fields
       .filter((f) => f.name !== 'date')
       .map((f) => ({ key: f.name, header: f.label, render: (r) => (r[f.name] !== undefined && r[f.name] !== '' ? `${r[f.name]}${f.unit ? ` ${f.unit}` : ''}` : '—') })),
-    { key: 'batch', header: 'Batch', render: (r) => r.cycle?.batchName || '—' },
+    { key: 'batch', header: 'Batch', render: (r) => batchLabel(r.cycle) },
     {
       key: 'actions',
       header: '',
@@ -143,19 +152,41 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
           {description && <p className="text-sm text-slate-600">{description}</p>}
         </div>
         <Button icon="plus" onClick={openModal}>
-          Add Record
+          {addLabel || 'Add Record'}
         </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Select value={fishpondId} onChange={(e) => setFishpondId(e.target.value)} className="w-56">
+        <Select
+          value={fishpondId}
+          onChange={(e) => {
+            setFishpondId(e.target.value);
+            setBatchFilter('');
+          }}
+          className="w-56"
+        >
           {fishponds.map((f) => (
             <option key={f._id} value={f._id}>
               {f.name}
             </option>
           ))}
         </Select>
-        <SpeciesFilterSelect species={species} value={speciesFilter} onChange={setSpeciesFilter} />
+        <SpeciesFilterSelect
+          species={species}
+          value={speciesFilter}
+          onChange={(value) => {
+            setSpeciesFilter(value);
+            setBatchFilter('');
+          }}
+        />
+        <Select value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)} className="w-56" aria-label="Batch">
+          <option value="">All batches</option>
+          {cycles.map((c) => (
+            <option key={c._id} value={c._id}>
+              {batchLabel(c)}
+            </option>
+          ))}
+        </Select>
       </div>
 
       {chartMetricKey && (
@@ -166,18 +197,18 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
 
       <Card title="Records" padded={false}>
         <div className="p-2">
-          <DataTable columns={columns} rows={records} loading={loading} />
+          <DataTable columns={columns} rows={visibleRecords} loading={loading} />
         </div>
       </Card>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={`Add ${title.slice(0, -1)}`}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={addLabel || `Add ${title.slice(0, -1)}`}>
         <form onSubmit={submit} className="space-y-4">
-          {activeCycles.length > 1 && (
+          {activeCycles.length > 0 && (
             <Field label="Batch / Cycle" required>
               <Select value={selectedCycle} onChange={(e) => setSelectedCycle(e.target.value)}>
                 {activeCycles.map((c) => (
                   <option key={c._id} value={c._id}>
-                    {c.batchName || c._id.slice(-6)} — {c.species?.name}
+                    {batchLabel(c)} — {c.species?.name}
                   </option>
                 ))}
               </Select>
@@ -192,6 +223,15 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
             <Field key={f.name} label={f.label} required={f.required} hint={f.hint}>
               {f.type === 'textarea' ? (
                 <Textarea value={form[f.name]} onChange={(e) => setForm({ ...form, [f.name]: e.target.value })} />
+              ) : f.type === 'selectWithOther' ? (
+                <SelectWithOther
+                  options={f.options}
+                  placeholder={f.placeholder}
+                  otherPlaceholder={f.otherPlaceholder}
+                  required={f.required}
+                  value={form[f.name]}
+                  onChange={(value) => setForm({ ...form, [f.name]: value })}
+                />
               ) : (
                 <Input
                   type={f.type}

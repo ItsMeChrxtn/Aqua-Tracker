@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import toast from '../../utils/notify';
 import { fishpondApi } from '../../api/fishponds';
-import { apiErrorMessage } from '../../api/client';
+import { apiErrorMessage, assetUrl } from '../../api/client';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import { Select, Field, Textarea } from '../../components/ui/FormField';
-import { formatDate, STATUS_BADGE_CLASS } from '../../utils/format';
+import { formatArea, formatCapacity, formatDate, STATUS_BADGE_CLASS } from '../../utils/format';
 import IconButton from '../../components/ui/IconButton';
+import FishpondPhoto from '../../components/ui/FishpondPhoto';
 
 export default function FishpondsApproval() {
   const [fishponds, setFishponds] = useState([]);
@@ -72,10 +73,23 @@ export default function FishpondsApproval() {
           <DataTable
             loading={loading}
             columns={[
+              {
+                key: 'photo',
+                header: 'Photo',
+                render: (f) =>
+                  f.imageUrl ? (
+                    <a href={assetUrl(f.imageUrl)} target="_blank" rel="noreferrer" title="Open full photo">
+                      <FishpondPhoto src={f.imageUrl} alt={f.name} className="h-10 w-14 rounded-lg" />
+                    </a>
+                  ) : (
+                    '—'
+                  ),
+              },
               { key: 'name', header: 'Fishpond' },
               { key: 'owner', header: 'Owner', render: (f) => f.owner?.name },
               { key: 'barangay', header: 'Barangay' },
-              { key: 'areaSize', header: 'Area', render: (f) => (f.areaSize ? `${f.areaSize} m²` : '—') },
+              { key: 'areaSize', header: 'Area', render: (f) => formatArea(f.areaSize) },
+              { key: 'capacity', header: 'Capacity', render: (f) => formatCapacity(f.capacity) },
               { key: 'createdAt', header: 'Registered', render: (f) => formatDate(f.createdAt) },
               { key: 'status', header: 'Status', render: (f) => <Badge className={STATUS_BADGE_CLASS[f.status]}>{f.status}</Badge> },
               {

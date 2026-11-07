@@ -6,7 +6,6 @@ export const NAV_CONFIG = {
       section: 'Fishpond Management',
       items: [
         { label: 'Fishpond List', to: '/owner/fishponds', icon: 'list' },
-        { label: 'Register Fishpond', to: '/owner/fishponds/new', icon: 'plus' },
         { label: 'Inventory & Resources', to: '/owner/inventory', icon: 'clipboard' },
       ],
     },

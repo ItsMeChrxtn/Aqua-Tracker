@@ -7,10 +7,12 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
 import Icon from '../../components/ui/Icon';
+import { hectaresToSquareMeters } from '../../utils/format';
+import { MAX_AREA_HECTARES, MIN_AREA_HECTARES, MAX_CAPACITY } from '../../utils/limits';
 
 export default function RegisterFishpond() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', barangay: '', areaSize: '' });
+  const [form, setForm] = useState({ name: '', barangay: '', areaHectares: '', capacity: '' });
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -28,7 +30,8 @@ export default function RegisterFishpond() {
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('barangay', form.barangay);
-      if (form.areaSize) formData.append('areaSize', form.areaSize);
+      if (form.areaHectares) formData.append('areaSize', hectaresToSquareMeters(form.areaHectares));
+      if (form.capacity) formData.append('capacity', form.capacity);
       if (image) formData.append('image', image);
 
       await fishpondApi.register(formData);
@@ -52,9 +55,14 @@ export default function RegisterFishpond() {
           <Field label="Barangay" required>
             <BarangaySelect required value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
           </Field>
-          <Field label="Area Size (m²)">
-            <Input type="number" min="0" value={form.areaSize} onChange={(e) => setForm({ ...form, areaSize: e.target.value })} />
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Area Size (hectares)" hint={`Up to ${MAX_AREA_HECTARES} hectares`}>
+              <Input type="number" min={MIN_AREA_HECTARES} max={MAX_AREA_HECTARES} step="any" value={form.areaHectares} onChange={(e) => setForm({ ...form, areaHectares: e.target.value })} placeholder="e.g. 0.5" />
+            </Field>
+            <Field label="Capacity (no. of fish)" hint="Most fish this pond can hold">
+              <Input type="number" min="1" max={MAX_CAPACITY} step="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} placeholder="e.g. 5000" />
+            </Field>
+          </div>
           <Field label="Fishpond Photo" hint="Optional — helps the Agriculture Office verify your registration">
             <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 py-6 text-slate-400 hover:border-brand-400 hover:text-brand-500">
               {preview ? (

@@ -54,11 +54,11 @@ function clearOtp(user) {
   user.otpAttempts = 0;
 }
 
-// Readable temporary password for admin-created accounts, e.g. "Aqua-7KQ2-M9XT".
+// Readable temporary password for admin-created accounts, e.g. "Aqua-7KQ-M9XT" (13 characters, the maximum password length).
 function generateTempPassword() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const pick = (n) => Array.from({ length: n }, () => alphabet[crypto.randomInt(alphabet.length)]).join('');
-  return `Aqua-${pick(4)}-${pick(4)}`;
+  return `Aqua-${pick(3)}-${pick(4)}`;
 }
 
 module.exports = { issueOtp, checkOtp, clearOtp, secondsUntilResend, generateTempPassword, RESEND_COOLDOWN_SECONDS };

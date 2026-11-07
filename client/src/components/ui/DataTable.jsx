@@ -10,9 +10,7 @@ export default function DataTable({ columns, rows, keyField = '_id', emptyMessag
     );
   }
 
-  if (!rows || rows.length === 0) {
-    return <div className="py-14 text-center text-sm text-slate-400">{emptyMessage}</div>;
-  }
+  const isEmpty = !rows || rows.length === 0;
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
@@ -27,15 +25,23 @@ export default function DataTable({ columns, rows, keyField = '_id', emptyMessag
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {rows.map((row) => (
-            <tr key={row[keyField]} className="transition-colors hover:bg-brand-50/40">
-              {columns.map((col) => (
-                <td key={col.key} className="whitespace-nowrap px-3.5 py-3 text-slate-700">
-                  {col.render ? col.render(row) : (row[col.key] ?? '—')}
-                </td>
-              ))}
+          {isEmpty ? (
+            <tr>
+              <td colSpan={columns.length} className="px-3.5 py-14 text-center text-sm text-slate-400">
+                {emptyMessage}
+              </td>
             </tr>
-          ))}
+          ) : (
+            rows.map((row) => (
+              <tr key={row[keyField]} className="transition-colors hover:bg-brand-50/40">
+                {columns.map((col) => (
+                  <td key={col.key} className="whitespace-nowrap px-3.5 py-3 text-slate-700">
+                    {col.render ? col.render(row) : (row[col.key] ?? '—')}
+                  </td>
+                ))}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

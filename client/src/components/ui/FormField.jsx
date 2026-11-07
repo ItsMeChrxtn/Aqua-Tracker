@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NOVELETA_BARANGAYS } from '../../utils/barangays';
 
 export function Field({ label, hint, error, required, children }) {
@@ -32,6 +33,33 @@ export function Select({ children, ...props }) {
 
 export function Textarea(props) {
   return <textarea className={baseInput} rows={3} {...props} />;
+}
+
+const OTHERS = '__others__';
+
+// Dropdown with an "Others" choice that reveals a text box. `onChange` gets the
+// plain value: the picked option, or whatever was typed.
+export function SelectWithOther({ options, value, onChange, required, placeholder, otherPlaceholder = 'Please specify' }) {
+  const [typing, setTyping] = useState(Boolean(value) && !options.some((o) => o.value === value));
+
+  const pick = (e) => {
+    const others = e.target.value === OTHERS;
+    setTyping(others);
+    onChange(others ? '' : e.target.value);
+  };
+
+  return (
+    <div className="space-y-2">
+      <Select required={required} value={typing ? OTHERS : value} onChange={pick}>
+        {placeholder && <option value="">{placeholder}</option>}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+        <option value={OTHERS}>Others</option>
+      </Select>
+      {typing && <Input required autoFocus value={value} onChange={(e) => onChange(e.target.value)} placeholder={otherPlaceholder} />}
+    </div>
+  );
 }
 
 // Dropdown of Noveleta barangays. A saved value outside the official list

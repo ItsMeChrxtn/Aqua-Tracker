@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fishpondApi } from '../../api/fishponds';
-import { assetUrl } from '../../api/client';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import EmptyState from '../../components/ui/EmptyState';
 import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
-import { formatDate, STATUS_BADGE_CLASS } from '../../utils/format';
+import FishpondPhoto from '../../components/ui/FishpondPhoto';
+import { formatArea, formatCapacity, formatDate, STATUS_BADGE_CLASS } from '../../utils/format';
 
 export default function FishpondList() {
   const [fishponds, setFishponds] = useState([]);
@@ -47,13 +47,7 @@ export default function FishpondList() {
               to={`/owner/fishponds/${f._id}`}
               className="hover-lift group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
             >
-              <div className="flex h-32 items-center justify-center bg-slate-50">
-                {f.imageUrl ? (
-                  <img src={assetUrl(f.imageUrl)} alt={f.name} className="h-full w-full object-cover" />
-                ) : (
-                  <Icon name="fish" className="h-8 w-8 text-slate-400" />
-                )}
-              </div>
+              <FishpondPhoto src={f.imageUrl} alt={f.name} className="h-32 w-full" />
               <Card padded={true} className="rounded-none border-0 shadow-none">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -64,8 +58,8 @@ export default function FishpondList() {
                   </div>
                   <Badge className={STATUS_BADGE_CLASS[f.status]}>{f.status}</Badge>
                 </div>
-                <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
-                  <span>{f.areaSize ? `${f.areaSize} m²` : 'Area not set'}</span>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-slate-400">
+                  <span>{formatArea(f.areaSize, 'Area not set')} · {formatCapacity(f.capacity, 'Capacity not set')}</span>
                   <span>Registered {formatDate(f.createdAt)}</span>
                 </div>
                 {f.status === 'rejected' && f.rejectionReason && (

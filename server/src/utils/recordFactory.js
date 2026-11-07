@@ -46,7 +46,7 @@ function createRecordHandlers(Model, { targetType, pickFields, onCreated }) {
 
     const records = await Model.find(filter).sort({ date: 1 }).populate({
       path: 'cycle',
-      select: 'batchName species',
+      select: 'batchName species stockingDate',
       populate: { path: 'species', select: 'name waterType' },
     });
 

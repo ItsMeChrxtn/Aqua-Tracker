@@ -17,6 +17,7 @@ export default function StockingRecords() {
       fields={fields}
       chartMetricKey="quantity"
       chartLabel="Fingerlings Stocked"
+      addLabel="Add Stock"
     />
   );
 }

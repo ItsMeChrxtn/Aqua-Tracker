@@ -7,8 +7,9 @@ import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import AuthBrandPanel from './AuthBrandPanel';
+import { PASSWORD_MIN, PASSWORD_MAX, PASSWORD_HINT } from '../../utils/limits';
 
-const EMPTY = { name: '', email: '', password: '', confirmPassword: '', phone: '', barangay: '' };
+const EMPTY = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', phone: '', barangay: '' };
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -56,9 +57,14 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
-            <Field label="Full name" required>
-              <Input required value={form.name} onChange={update('name')} placeholder="Juan Dela Cruz" />
-            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="First name" required>
+                <Input required value={form.firstName} onChange={update('firstName')} placeholder="Juan" autoComplete="given-name" />
+              </Field>
+              <Field label="Surname" required>
+                <Input required value={form.lastName} onChange={update('lastName')} placeholder="Dela Cruz" autoComplete="family-name" />
+              </Field>
+            </div>
             <Field label="Email address" required>
               <Input type="email" required value={form.email} onChange={update('email')} placeholder="you@example.com" />
             </Field>
@@ -71,8 +77,8 @@ export default function RegisterPage() {
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Password" required hint="At least 6 characters">
-                <Input type="password" required minLength={6} value={form.password} onChange={update('password')} />
+              <Field label="Password" required hint={PASSWORD_HINT}>
+                <Input type="password" required minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} value={form.password} onChange={update('password')} />
               </Field>
               <Field label="Confirm password" required>
                 <Input type="password" required value={form.confirmPassword} onChange={update('confirmPassword')} />

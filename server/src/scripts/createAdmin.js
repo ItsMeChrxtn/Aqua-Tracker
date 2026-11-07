@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const connectDB = require('../config/db');
 const User = require('../models/User');
+const { passwordError } = require('../utils/password');
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -27,8 +28,9 @@ async function main() {
     console.error('Usage: npm run create-admin -- --name "Full Name" --email you@example.com --password yourpassword');
     process.exit(1);
   }
-  if (password.length < 6) {
-    console.error('Password must be at least 6 characters.');
+  const invalidPassword = passwordError(password);
+  if (invalidPassword) {
+    console.error(`${invalidPassword}.`);
     process.exit(1);
   }
 

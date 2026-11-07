@@ -5,20 +5,22 @@ const { ApiError } = require('../middleware/errorHandler');
 const { signToken } = require('../utils/token');
 const { logActivity } = require('../utils/activityLog');
 const { issueOtp, checkOtp, clearOtp, secondsUntilResend } = require('../utils/otp');
+const { passwordError } = require('../utils/password');
 
 // Public self-registration always creates a fishpond_owner account, which
 // stays unverified until the emailed OTP is confirmed via /verify-email.
 // agriculture_staff / admin accounts are created via the admin bootstrap
 // script or the Admin > User Management UI.
 const register = asyncHandler(async (req, res) => {
-  const { name, email, password, phone, barangay } = req.body;
+  const { firstName, lastName, email, password, phone, barangay } = req.body;
+  const nameParts = [firstName, lastName].map((part) => String(part || '').trim()).filter(Boolean);
 
-  if (!name || !email || !password) {
-    throw new ApiError(400, 'Name, email, and password are required');
+  if (nameParts.length < 2 || !email || !password) {
+    throw new ApiError(400, 'First name, surname, email, and password are required');
   }
-  if (password.length < 6) {
-    throw new ApiError(400, 'Password must be at least 6 characters');
-  }
+  const invalidPassword = passwordError(password);
+  if (invalidPassword) throw new ApiError(400, invalidPassword);
+  const name = nameParts.join(' ');
 
   const normalizedEmail = email.toLowerCase().trim();
   const passwordHash = await bcrypt.hash(password, 10);
@@ -137,9 +139,8 @@ const changePassword = asyncHandler(async (req, res) => {
   if (!currentPassword || !newPassword) {
     throw new ApiError(400, 'Current and new password are required');
   }
-  if (newPassword.length < 6) {
-    throw new ApiError(400, 'New password must be at least 6 characters');
-  }
+  const invalidPassword = passwordError(newPassword, 'New password');
+  if (invalidPassword) throw new ApiError(400, invalidPassword);
   if (newPassword === currentPassword) {
     throw new ApiError(400, 'New password must be different from the current one');
   }

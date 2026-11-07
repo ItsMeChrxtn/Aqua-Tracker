@@ -9,6 +9,7 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import { ROLE_HOME } from '../../utils/navConfig';
 import AuthBrandPanel from './AuthBrandPanel';
+import { PASSWORD_MIN, PASSWORD_MAX, PASSWORD_HINT } from '../../utils/limits';
 
 const EMPTY = { currentPassword: '', newPassword: '', confirmPassword: '' };
 
@@ -72,8 +73,8 @@ export default function ChangePasswordRequired() {
             <Field label="Temporary password" required hint="The password from your welcome email">
               <Input type="password" required autoComplete="current-password" value={form.currentPassword} onChange={update('currentPassword')} />
             </Field>
-            <Field label="New password" required hint="At least 6 characters">
-              <Input type="password" required minLength={6} autoComplete="new-password" value={form.newPassword} onChange={update('newPassword')} />
+            <Field label="New password" required hint={PASSWORD_HINT}>
+              <Input type="password" required minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} autoComplete="new-password" value={form.newPassword} onChange={update('newPassword')} />
             </Field>
             <Field label="Confirm new password" required>
               <Input type="password" required autoComplete="new-password" value={form.confirmPassword} onChange={update('confirmPassword')} />

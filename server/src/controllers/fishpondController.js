@@ -5,6 +5,30 @@ const { ApiError } = require('../middleware/errorHandler');
 const { logActivity } = require('../utils/activityLog');
 const { createNotification } = require('../utils/notify');
 
+const MAX_AREA_HECTARES = 100;
+const SQUARE_METERS_PER_HECTARE = 10000;
+const MAX_CAPACITY = 100000000;
+
+const isSet = (value) => value !== undefined && value !== '';
+
+// Checked here rather than as schema `max` validators: Mongoose re-validates
+// loaded fields on save, so a schema limit would block approving or editing
+// any fishpond already saved with an out-of-range value.
+function assertValidSize({ areaSize, capacity }) {
+  if (isSet(areaSize)) {
+    const area = Number(areaSize);
+    if (!(area > 0 && area <= MAX_AREA_HECTARES * SQUARE_METERS_PER_HECTARE)) {
+      throw new ApiError(400, `Area size must be greater than 0 and at most ${MAX_AREA_HECTARES} hectares`);
+    }
+  }
+  if (isSet(capacity)) {
+    const fish = Number(capacity);
+    if (!(Number.isInteger(fish) && fish > 0 && fish <= MAX_CAPACITY)) {
+      throw new ApiError(400, `Capacity must be a whole number from 1 to ${MAX_CAPACITY.toLocaleString('en-PH')}`);
+    }
+  }
+}
+
 // GET /api/fishponds?barangay=&status=&owner=
 const listFishponds = asyncHandler(async (req, res) => {
   const filter = {};
@@ -41,14 +65,16 @@ const getFishpond = asyncHandler(async (req, res) => {
 });
 
 const registerFishpond = asyncHandler(async (req, res) => {
-  const { name, barangay, areaSize } = req.body;
+  const { name, barangay, areaSize, capacity } = req.body;
   if (!name || !barangay) throw new ApiError(400, 'Fishpond name and barangay are required');
+  assertValidSize({ areaSize, capacity });
 
   const fishpond = await Fishpond.create({
     owner: req.user._id,
     name,
     barangay,
     areaSize,
+    capacity,
     imageUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
     status: 'pending',
   });
@@ -66,10 +92,12 @@ const updateFishpond = asyncHandler(async (req, res) => {
   const isStaff = ['agriculture_staff', 'admin'].includes(req.user.role);
   if (!isOwner && !isStaff) throw new ApiError(403, 'You do not have access to this fishpond');
 
-  const { name, barangay, areaSize } = req.body;
+  const { name, barangay, areaSize, capacity } = req.body;
+  assertValidSize({ areaSize, capacity });
   if (name !== undefined) fishpond.name = name;
   if (barangay !== undefined) fishpond.barangay = barangay;
   if (areaSize !== undefined) fishpond.areaSize = areaSize;
+  if (capacity !== undefined) fishpond.capacity = capacity;
   if (req.file) fishpond.imageUrl = `/uploads/${req.file.filename}`;
 
   await fishpond.save();

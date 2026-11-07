@@ -13,6 +13,23 @@ export function formatNumber(value, digits = 0) {
   return Number(value).toLocaleString('en-PH', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
+const SQUARE_METERS_PER_HECTARE = 10000;
+
+// Fishpond area is stored in square meters and shown in hectares.
+export function formatArea(squareMeters, empty = '—') {
+  if (!squareMeters) return empty;
+  const hectares = squareMeters / SQUARE_METERS_PER_HECTARE;
+  return `${hectares.toLocaleString('en-PH', { maximumFractionDigits: 4 })} ha`;
+}
+
+export function hectaresToSquareMeters(hectares) {
+  return Math.round(Number(hectares) * SQUARE_METERS_PER_HECTARE * 100) / 100;
+}
+
+export function formatCapacity(capacity, empty = '—') {
+  return capacity ? `${formatNumber(capacity)} fish` : empty;
+}
+
 export const READINESS_LABEL = {
   growing: 'Growing',
   near_harvest: 'Near Harvest',

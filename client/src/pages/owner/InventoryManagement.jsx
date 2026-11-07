@@ -11,13 +11,16 @@ import DataTable from '../../components/ui/DataTable';
 import EmptyState from '../../components/ui/EmptyState';
 import Modal from '../../components/ui/Modal';
 import Spinner from '../../components/ui/Spinner';
-import { Field, Input, Select, Textarea } from '../../components/ui/FormField';
+import { Field, Input, Select, SelectWithOther, Textarea } from '../../components/ui/FormField';
 import { formatNumber } from '../../utils/format';
 import IconButton from '../../components/ui/IconButton';
 
 const EMPTY_FORM = { name: '', category: 'feed', unit: 'kg', currentStock: '', reorderLevel: '', notes: '' };
 
 const CATEGORY_LABEL = { feed: 'Feed', medicine: 'Medicine', chemical: 'Chemical', other: 'Other' };
+
+const CATEGORY_OPTIONS = ['feed', 'medicine', 'chemical'].map((c) => ({ value: c, label: CATEGORY_LABEL[c] }));
+const UNIT_OPTIONS = ['kg', 'sack', 'liter'].map((u) => ({ value: u, label: u }));
 
 export default function InventoryManagement() {
   const { fishponds, loading: loadingFishponds } = useOwnerFishponds();
@@ -122,7 +125,7 @@ export default function InventoryManagement() {
             <DataTable
               columns={[
                 { key: 'name', header: 'Item' },
-                { key: 'category', header: 'Category', render: (i) => CATEGORY_LABEL[i.category] },
+                { key: 'category', header: 'Category', render: (i) => CATEGORY_LABEL[i.category] || i.category },
                 { key: 'currentStock', header: 'Current Stock', render: (i) => `${formatNumber(i.currentStock, 1)} ${i.unit}` },
                 { key: 'reorderLevel', header: 'Reorder Level', render: (i) => `${formatNumber(i.reorderLevel, 1)} ${i.unit}` },
                 {
@@ -161,15 +164,10 @@ export default function InventoryManagement() {
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Category">
-              <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                <option value="feed">Feed</option>
-                <option value="medicine">Medicine</option>
-                <option value="chemical">Chemical</option>
-                <option value="other">Other</option>
-              </Select>
+              <SelectWithOther required options={CATEGORY_OPTIONS} value={form.category} onChange={(category) => setForm({ ...form, category })} otherPlaceholder="Type the category" />
             </Field>
             <Field label="Unit" required>
-              <Input required value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="kg, sack, liter" />
+              <SelectWithOther required options={UNIT_OPTIONS} value={form.unit} onChange={(unit) => setForm({ ...form, unit })} otherPlaceholder="Type the unit" />
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
