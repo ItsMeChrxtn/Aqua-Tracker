@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NOVELETA_BARANGAYS } from '../../utils/barangays';
+import Icon from './Icon';
 
 export function Field({ label, hint, error, required, children }) {
   return (
@@ -21,6 +22,25 @@ const baseInput =
 
 export function Input(props) {
   return <input className={baseInput} {...props} />;
+}
+
+// Password field with an eye button that shows or hides what was typed.
+export function PasswordInput(props) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input className={`${baseInput} pr-11`} {...props} type={visible ? 'text' : 'password'} />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
+        aria-label={visible ? 'Hide password' : 'Show password'}
+        title={visible ? 'Hide password' : 'Show password'}
+      >
+        <Icon name={visible ? 'eyeOff' : 'eye'} className="h-4 w-4" />
+      </button>
+    </div>
+  );
 }
 
 export function Select({ children, ...props }) {

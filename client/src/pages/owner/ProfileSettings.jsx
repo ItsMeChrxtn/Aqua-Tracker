@@ -5,7 +5,7 @@ import { authApi } from '../../api/auth';
 import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
+import { Field, Input, PasswordInput, BarangaySelect } from '../../components/ui/FormField';
 import { PASSWORD_MIN, PASSWORD_MAX, PASSWORD_HINT } from '../../utils/limits';
 
 export default function ProfileSettings() {
@@ -77,14 +77,14 @@ export default function ProfileSettings() {
       <Card title="Change Password">
         <form onSubmit={savePassword} className="space-y-4">
           <Field label="Current Password" required>
-            <Input type="password" required value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} />
+            <PasswordInput required value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="New Password" required hint={PASSWORD_HINT}>
-              <Input type="password" minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} required value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} />
+              <PasswordInput minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} required value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} />
             </Field>
             <Field label="Confirm New Password" required>
-              <Input type="password" required value={pw.confirmPassword} onChange={(e) => setPw({ ...pw, confirmPassword: e.target.value })} />
+              <PasswordInput required value={pw.confirmPassword} onChange={(e) => setPw({ ...pw, confirmPassword: e.target.value })} />
             </Field>
           </div>
           <div className="flex justify-end">

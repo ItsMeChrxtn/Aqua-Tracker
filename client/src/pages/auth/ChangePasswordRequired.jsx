@@ -4,7 +4,7 @@ import toast from '../../utils/notify';
 import { useAuth } from '../../auth/AuthContext';
 import { authApi } from '../../api/auth';
 import { apiErrorMessage } from '../../api/client';
-import { Field, Input } from '../../components/ui/FormField';
+import { Field, PasswordInput } from '../../components/ui/FormField';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import { ROLE_HOME } from '../../utils/navConfig';
@@ -71,13 +71,13 @@ export default function ChangePasswordRequired() {
 
           <form onSubmit={submit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
             <Field label="Temporary password" required hint="The password from your welcome email">
-              <Input type="password" required autoComplete="current-password" value={form.currentPassword} onChange={update('currentPassword')} />
+              <PasswordInput required autoComplete="current-password" value={form.currentPassword} onChange={update('currentPassword')} />
             </Field>
             <Field label="New password" required hint={PASSWORD_HINT}>
-              <Input type="password" required minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} autoComplete="new-password" value={form.newPassword} onChange={update('newPassword')} />
+              <PasswordInput required minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} autoComplete="new-password" value={form.newPassword} onChange={update('newPassword')} />
             </Field>
             <Field label="Confirm new password" required>
-              <Input type="password" required autoComplete="new-password" value={form.confirmPassword} onChange={update('confirmPassword')} />
+              <PasswordInput required autoComplete="new-password" value={form.confirmPassword} onChange={update('confirmPassword')} />
             </Field>
             <Button type="submit" loading={saving} className="w-full justify-center py-2.5">
               Save New Password

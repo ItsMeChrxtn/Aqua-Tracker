@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import toast from '../../utils/notify';
 import { useAuth } from '../../auth/AuthContext';
 import { apiErrorMessage } from '../../api/client';
-import { Field, Input } from '../../components/ui/FormField';
+import { Field, Input, PasswordInput } from '../../components/ui/FormField';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import { ROLE_HOME } from '../../utils/navConfig';
@@ -71,8 +71,7 @@ export default function LoginPage() {
               />
             </Field>
             <Field label="Password" required>
-              <Input
-                type="password"
+              <PasswordInput
                 required
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}

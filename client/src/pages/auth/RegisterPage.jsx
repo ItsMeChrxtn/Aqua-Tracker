@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from '../../utils/notify';
 import { useAuth } from '../../auth/AuthContext';
 import { apiErrorMessage } from '../../api/client';
-import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
+import { Field, Input, PasswordInput, BarangaySelect } from '../../components/ui/FormField';
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import AuthBrandPanel from './AuthBrandPanel';
@@ -78,10 +78,10 @@ export default function RegisterPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Password" required hint={PASSWORD_HINT}>
-                <Input type="password" required minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} value={form.password} onChange={update('password')} />
+                <PasswordInput required minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} value={form.password} onChange={update('password')} />
               </Field>
               <Field label="Confirm password" required>
-                <Input type="password" required value={form.confirmPassword} onChange={update('confirmPassword')} />
+                <PasswordInput required value={form.confirmPassword} onChange={update('confirmPassword')} />
               </Field>
             </div>
             <Button type="submit" loading={loading} className="w-full justify-center py-2.5">
