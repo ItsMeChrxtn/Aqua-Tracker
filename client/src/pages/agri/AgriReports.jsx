@@ -24,8 +24,8 @@ export default function AgriReports() {
       if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), 'aquatrack-municipal-report.xlsx');
       else await downloadFile(reportApi.exportPdfUrl(), 'aquatrack-municipal-report.pdf');
       toast.success('Report downloaded');
-    } catch {
-      toast.error('Export failed');
+    } catch (err) {
+      if (!err?.handled) toast.error('Export failed');
     } finally {
       setExporting('');
     }

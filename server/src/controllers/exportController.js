@@ -9,9 +9,14 @@ const GrowthRecord = require('../models/GrowthRecord');
 const MortalityRecord = require('../models/MortalityRecord');
 const FeedingRecord = require('../models/FeedingRecord');
 const HarvestRecord = require('../models/HarvestRecord');
+const InventoryItem = require('../models/InventoryItem');
+const SalesRecord = require('../models/SalesRecord');
 const asyncHandler = require('../utils/asyncHandler');
 const { computeHarvestEstimate } = require('../utils/calculations');
 const { logActivity } = require('../utils/activityLog');
+
+const USER_SECRET_FIELDS = '-passwordHash -otpHash -otpExpiresAt -otpSentAt -otpAttempts';
+const TIME_ZONE = 'Asia/Manila';
 
 const READINESS_LABEL = {
   growing: 'Growing',
@@ -95,7 +100,8 @@ const exportPdf = asyncHandler(async (req, res) => {
   doc.pipe(res);
 
   doc.fontSize(16).text('AquaTrack — Production Report', { align: 'center' });
-  doc.fontSize(9).fillColor('#555').text(`Generated ${new Date().toLocaleString()} by ${req.user.name}`, { align: 'center' });
+  const generatedAt = new Date().toLocaleString('en-PH', { timeZone: TIME_ZONE, dateStyle: 'medium', timeStyle: 'short' });
+  doc.fontSize(9).fillColor('#555').text(`Generated ${generatedAt} by ${req.user.name}`, { align: 'center' });
   doc.moveDown(1);
 
   const headers = ['Fishpond', 'Barangay', 'Species', 'Batch', 'Status', 'Stocked', 'Current', 'Survival %', 'Avg Wt (g)', 'Est. Harvest (kg)', 'Readiness'];
@@ -111,11 +117,11 @@ const exportPdf = asyncHandler(async (req, res) => {
   y += 16;
   doc.font('Helvetica');
 
+  if (rows.length === 0) {
+    doc.text('No production cycles to report yet.', startX, y);
+  }
+
   rows.forEach((row) => {
-    if (y > doc.page.height - doc.page.margins.bottom - 20) {
-      doc.addPage({ margin: 40, size: 'A4', layout: 'landscape' });
-      y = doc.page.margins.top;
-    }
     const values = [
       row.fishpond,
       row.barangay,
@@ -128,12 +134,20 @@ const exportPdf = asyncHandler(async (req, res) => {
       String(row.averageWeight),
       String(row.estimatedHarvestKg),
       row.readiness,
-    ];
+    ].map((v) => (v === undefined || v === null ? '' : String(v)));
+
+    // Long names wrap onto extra lines; size the row to its tallest cell so
+    // the next row doesn't print on top of it.
+    const rowHeight = Math.max(...values.map((v, i) => doc.heightOfString(v, { width: colWidths[i] - 4 }))) + 6;
+    if (y + rowHeight > doc.page.height - doc.page.margins.bottom) {
+      doc.addPage({ margin: 40, size: 'A4', layout: 'landscape' });
+      y = doc.page.margins.top;
+    }
     values.forEach((v, i) => {
       const x = startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
-      doc.text(v ?? '', x, y, { width: colWidths[i] });
+      doc.text(v, x, y, { width: colWidths[i] - 4 });
     });
-    y += 16;
+    y += rowHeight;
   });
 
   await logActivity(req, { action: 'EXPORT', targetType: 'Report', details: 'Exported production report (PDF)' });
@@ -144,8 +158,8 @@ const exportPdf = asyncHandler(async (req, res) => {
 // GET /api/admin/backup — manual full-data export (admin only). Substitutes
 // for automated backup infrastructure, which is out of scope for this system.
 const exportBackup = asyncHandler(async (req, res) => {
-  const [users, species, fishponds, cycles, stocking, growth, mortality, feeding, harvests] = await Promise.all([
-    User.find().select('-passwordHash'),
+  const [users, species, fishponds, cycles, stocking, growth, mortality, feeding, harvests, inventory, sales] = await Promise.all([
+    User.find().select(USER_SECRET_FIELDS),
     Species.find(),
     Fishpond.find(),
     ProductionCycle.find(),
@@ -154,6 +168,8 @@ const exportBackup = asyncHandler(async (req, res) => {
     MortalityRecord.find(),
     FeedingRecord.find(),
     HarvestRecord.find(),
+    InventoryItem.find(),
+    SalesRecord.find(),
   ]);
 
   const backup = {
@@ -168,6 +184,8 @@ const exportBackup = asyncHandler(async (req, res) => {
     mortality,
     feeding,
     harvests,
+    inventory,
+    sales,
   };
 
   await logActivity(req, { action: 'EXPORT', targetType: 'Backup', details: 'Exported full data backup (JSON)' });

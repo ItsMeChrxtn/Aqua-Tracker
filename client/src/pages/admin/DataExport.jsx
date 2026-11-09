@@ -14,8 +14,8 @@ export default function DataExport() {
     try {
       await fn(filename);
       toast.success('Download started');
-    } catch {
-      toast.error('Export failed');
+    } catch (err) {
+      if (!err?.handled) toast.error('Export failed');
     } finally {
       setBusy('');
     }
@@ -32,7 +32,7 @@ export default function DataExport() {
           </div>
           <div className="flex-1">
             <p className="text-sm text-slate-700">
-              Downloads a complete JSON export of all users, species, fishponds, production cycles, and monitoring records.
+              Downloads a complete JSON export of all users, species, fishponds, production cycles, monitoring records, inventory, and sales.
               Use this as a manual backup snapshot — AquaTrack does not run automated backup infrastructure.
             </p>
             <Button

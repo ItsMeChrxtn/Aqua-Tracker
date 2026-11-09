@@ -72,7 +72,9 @@ export default function HarvestEstimation() {
       .finally(() => setLoading(false));
   }, [cycleId, cycles, fishpondId]);
 
-  const exportPdf = () => downloadFile(reportApi.exportPdfUrl(), 'aquatrack-harvest-report.pdf').catch(() => toast.error('Export failed'));
+  const exportPdf = () => downloadFile(reportApi.exportPdfUrl(), 'aquatrack-harvest-report.pdf').catch((err) => {
+      if (!err?.handled) toast.error('Export failed');
+    });
 
   const submitHarvest = async (e) => {
     e.preventDefault();

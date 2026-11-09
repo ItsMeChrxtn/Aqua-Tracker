@@ -25,8 +25,8 @@ export default function Reports() {
       if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), 'aquatrack-production-report.xlsx');
       else await downloadFile(reportApi.exportPdfUrl(), 'aquatrack-production-report.pdf');
       toast.success('Report downloaded');
-    } catch {
-      toast.error('Export failed');
+    } catch (err) {
+      if (!err?.handled) toast.error('Export failed');
     } finally {
       setExporting('');
     }

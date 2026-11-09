@@ -13,8 +13,8 @@ export const reportApi = {
   ownerSummary: () => client.get('/reports/owner-summary').then((r) => r.data),
   municipalSummary: (params) => client.get('/reports/municipal-summary', { params }).then((r) => r.data),
   adminSummary: () => client.get('/reports/admin-summary').then((r) => r.data),
-  exportExcelUrl: () => '/api/reports/export/excel',
-  exportPdfUrl: () => '/api/reports/export/pdf',
+  exportExcelUrl: () => '/reports/export/excel',
+  exportPdfUrl: () => '/reports/export/pdf',
 };
 
 export const notificationApi = {
@@ -33,5 +33,5 @@ export const settingsApi = {
 };
 
 export const adminApi = {
-  backupUrl: () => '/api/admin/backup',
+  backupUrl: () => '/admin/backup',
 };
