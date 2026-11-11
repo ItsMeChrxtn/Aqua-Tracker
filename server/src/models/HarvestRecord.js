@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
-// Actual logged harvest — logging this closes the production cycle.
+// Actual logged harvest. Partial harvests leave the cycle active; harvesting
+// every remaining fish closes it.
 const harvestRecordSchema = new mongoose.Schema(
   {
     cycle: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductionCycle', required: true },

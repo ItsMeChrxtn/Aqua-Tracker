@@ -1,7 +1,7 @@
 const MortalityRecord = require('../models/MortalityRecord');
 const { createRecordHandlers } = require('../utils/recordFactory');
 const { ApiError } = require('../middleware/errorHandler');
-const { getTotalMortality, HIGH_MORTALITY_THRESHOLD_PERCENT } = require('../utils/calculations');
+const { getTotalMortality, getTotalStocked, HIGH_MORTALITY_THRESHOLD_PERCENT } = require('../utils/calculations');
 const { createNotification } = require('../utils/notify');
 
 const pickFields = (body) => {
@@ -14,10 +14,11 @@ const pickFields = (body) => {
 // high-mortality alert threshold and notify the owner if so.
 const onCreated = async ({ cycle, req }) => {
   const totalMortality = await getTotalMortality(cycle._id);
-  const mortalityPercent = cycle.initialCount > 0 ? (totalMortality / cycle.initialCount) * 100 : 0;
+  const totalStocked = await getTotalStocked(cycle);
+  const mortalityPercent = totalStocked > 0 ? (totalMortality / totalStocked) * 100 : 0;
 
   const previousTotal = totalMortality - req.body.quantity;
-  const previousPercent = cycle.initialCount > 0 ? (previousTotal / cycle.initialCount) * 100 : 0;
+  const previousPercent = totalStocked > 0 ? (previousTotal / totalStocked) * 100 : 0;
 
   const justCrossedThreshold = previousPercent < HIGH_MORTALITY_THRESHOLD_PERCENT && mortalityPercent >= HIGH_MORTALITY_THRESHOLD_PERCENT;
   if (justCrossedThreshold) {

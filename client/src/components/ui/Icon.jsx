@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, List, Plus, Fish, Skull, TrendingUp, HeartPulse, Wheat,
   FileText, Settings, Users, ClipboardList, Download, Bell, LogOut, Menu, X,
-  Pencil, Trash2, Check, XCircle, Filter, ChevronDown, Search, MapPin,
+  Pencil, Trash2, Check, XCircle, Filter, ChevronDown, ChevronUp, Search, MapPin,
   ImagePlus, ShieldCheck, ShieldAlert, CheckCircle2, AlertTriangle, Clock,
   ArrowRight, Loader2, Droplets, Waves, Package, CircleDollarSign, BarChart3,
   Landmark, Smartphone, ClipboardCheck, Sparkles, Quote, KeyRound, UserX, UserCheck,
@@ -32,6 +32,7 @@ const REGISTRY = {
   xCircle: XCircle,
   filter: Filter,
   chevronDown: ChevronDown,
+  chevronUp: ChevronUp,
   search: Search,
   location: MapPin,
   image: ImagePlus,

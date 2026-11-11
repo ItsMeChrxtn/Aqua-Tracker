@@ -71,13 +71,14 @@ export default function AgriDashboard() {
           <div className="p-2">
             <DataTable
               columns={[
-                { key: 'fishpondName', header: 'Fishpond' },
-                { key: 'owner', header: 'Owner' },
+                { key: 'fishpondName', header: 'Fishpond Name' },
+                { key: 'owner', header: 'Owner Name' },
                 { key: 'species', header: 'Species' },
                 { key: 'mortalityPercent', header: 'Mortality %', render: (r) => `${r.mortalityPercent}%` },
               ]}
               rows={highMortality.slice(0, 6)}
-              keyField="fishpondId"
+              keyField="cycleId"
+              wrap
               emptyMessage="No high-mortality fishponds right now."
             />
           </div>
@@ -86,14 +87,15 @@ export default function AgriDashboard() {
           <div className="p-2">
             <DataTable
               columns={[
-                { key: 'fishpondName', header: 'Fishpond' },
-                { key: 'owner', header: 'Owner' },
+                { key: 'fishpondName', header: 'Fishpond Name' },
+                { key: 'owner', header: 'Owner Name' },
                 { key: 'species', header: 'Species' },
                 { key: 'estimatedHarvestKg', header: 'Est. Harvest (kg)' },
                 { key: 'readinessStatus', header: 'Status', render: (r) => <Badge className={READINESS_BADGE_CLASS[r.readinessStatus]}>{READINESS_LABEL[r.readinessStatus]}</Badge> },
               ]}
               rows={nearHarvest.slice(0, 6)}
-              keyField="fishpondId"
+              keyField="cycleId"
+              wrap
               emptyMessage="No fishponds nearing harvest right now."
             />
           </div>

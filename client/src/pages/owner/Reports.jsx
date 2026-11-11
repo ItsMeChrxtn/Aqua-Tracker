@@ -5,6 +5,8 @@ import { downloadFile } from '../../utils/download';
 import Card from '../../components/ui/Card';
 import StatCard from '../../components/ui/StatCard';
 import Button from '../../components/ui/Button';
+import ExportMenu from '../../components/ui/ExportMenu';
+import CycleRecordsModal from '../../components/monitoring/CycleRecordsModal';
 import Badge from '../../components/ui/Badge';
 import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
@@ -14,6 +16,8 @@ export default function Reports() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState('');
+  const [query, setQuery] = useState('');
+  const [viewing, setViewing] = useState(null);
 
   useEffect(() => {
     reportApi.ownerSummary().then(setData).finally(() => setLoading(false));
@@ -22,8 +26,9 @@ export default function Reports() {
   const exportAs = async (type) => {
     setExporting(type);
     try {
-      if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), 'aquatrack-production-report.xlsx');
-      else await downloadFile(reportApi.exportPdfUrl(), 'aquatrack-production-report.pdf');
+      const params = query ? { q: query } : undefined;
+      if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), 'aquatrack-production-report.xlsx', params);
+      else await downloadFile(reportApi.exportPdfUrl(), 'aquatrack-production-report.pdf', params);
       toast.success('Report downloaded');
     } catch (err) {
       if (!err?.handled) toast.error('Export failed');
@@ -39,10 +44,7 @@ export default function Reports() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-slate-900">Reports</h2>
-        <div className="flex gap-2">
-          <Button variant="secondary" icon="download" loading={exporting === 'excel'} onClick={() => exportAs('excel')}>Export Excel</Button>
-          <Button variant="secondary" icon="download" loading={exporting === 'pdf'} onClick={() => exportAs('pdf')}>Export PDF</Button>
-        </div>
+        <ExportMenu onExport={exportAs} loading={!!exporting} />
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -61,14 +63,28 @@ export default function Reports() {
               { key: 'remaining', header: 'Remaining', render: (r) => formatNumber(r.remaining) },
               { key: 'survivalRate', header: 'Survival %' },
               { key: 'estimatedHarvestKg', header: 'Est. Harvest (kg)' },
-              { key: 'readinessStatus', header: 'Status', render: (r) => <Badge className={READINESS_BADGE_CLASS[r.readinessStatus]}>{READINESS_LABEL[r.readinessStatus]}</Badge> },
+              { key: 'readinessStatus', header: 'Status', value: (r) => READINESS_LABEL[r.readinessStatus], render: (r) => <Badge className={READINESS_BADGE_CLASS[r.readinessStatus]}>{READINESS_LABEL[r.readinessStatus]}</Badge> },
+              {
+                key: 'view',
+                header: '',
+                render: (r) => (
+                  <Button size="sm" variant="secondary" onClick={() => setViewing(r)}>
+                    View
+                  </Button>
+                ),
+              },
             ]}
             rows={data.productionSummary}
             keyField="cycleId"
+            searchable="Search fishpond, species, status…"
+            query={query}
+            onQueryChange={setQuery}
             emptyMessage="No active production cycles to report on yet."
           />
         </div>
       </Card>
+
+      <CycleRecordsModal row={viewing} onClose={() => setViewing(null)} />
     </div>
   );
 }

@@ -80,12 +80,13 @@ export default function HarvestEstimation() {
     e.preventDefault();
     setSaving(true);
     try {
-      await harvestApi.logHarvest(cycleId, { ...harvestForm, actualQuantity: Number(harvestForm.actualQuantity), actualWeightKg: Number(harvestForm.actualWeightKg) });
-      toast.success('Harvest logged — cycle closed.');
+      const res = await harvestApi.logHarvest(cycleId, { ...harvestForm, actualQuantity: Number(harvestForm.actualQuantity), actualWeightKg: Number(harvestForm.actualWeightKg) });
+      toast.success(res.closed ? 'All remaining fish harvested — this batch is now closed.' : `Harvest logged. ${formatNumber(res.remaining)} fish remain in this batch.`);
       setHarvestModalOpen(false);
+      setHarvestForm({ date: new Date().toISOString().slice(0, 10), actualQuantity: '', actualWeightKg: '', notes: '' });
       const list = await cycleApi.listForFishpond(fishpondId, { status: 'active' });
       setCycles(list);
-      setCycleId(list[0]?._id || '');
+      setCycleId(list.some((c) => c._id === cycleId) ? cycleId : list[0]?._id || '');
     } catch (err) {
       toast.error(apiErrorMessage(err, 'Failed to log harvest'));
     } finally {
@@ -130,7 +131,7 @@ export default function HarvestEstimation() {
       {!loading && estimate && (
         <>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-            <StatCard label="Total Stocked Fish" value={formatNumber(estimate.initialCount)} icon="fish" tone="brand" />
+            <StatCard label="Total Stocked Fish" value={formatNumber(estimate.totalStocked)} icon="fish" tone="brand" />
             <StatCard label="Remaining Fish" value={formatNumber(estimate.currentCount)} icon="fish" tone="sky" />
             <StatCard label="Average Weight" value={`${formatNumber(estimate.averageWeight)} g`} icon="growth" tone="violet" />
             <StatCard label="Survival Rate" value={`${estimate.survivalRate}%`} icon="survival" tone="emerald" />
@@ -187,8 +188,9 @@ export default function HarvestEstimation() {
             <Card title="Estimation Details">
               <dl className="space-y-2 text-sm">
                 {[
-                  ['Total Stocked Fish', formatNumber(estimate.initialCount)],
+                  ['Total Stocked Fish', formatNumber(estimate.totalStocked)],
                   ['Total Mortality', formatNumber(estimate.totalMortality)],
+                  ['Already Harvested', formatNumber(estimate.totalHarvested)],
                   ['Remaining Fish', formatNumber(estimate.currentCount)],
                   ['Average Weight (current)', `${formatNumber(estimate.averageWeight)} g`],
                   ['Survival Rate', `${estimate.survivalRate}%`],
@@ -213,8 +215,27 @@ export default function HarvestEstimation() {
           <Field label="Harvest Date" required>
             <Input type="date" required value={harvestForm.date} onChange={(e) => setHarvestForm({ ...harvestForm, date: e.target.value })} />
           </Field>
-          <Field label="Actual Quantity Harvested" required>
-            <Input type="number" min="0" required value={harvestForm.actualQuantity} onChange={(e) => setHarvestForm({ ...harvestForm, actualQuantity: e.target.value })} />
+          <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3.5 py-2.5 text-sm">
+            <span className="text-slate-600">
+              Remaining fish: <b className="text-slate-900">{formatNumber(estimate?.currentCount)}</b>
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() =>
+                setHarvestForm({
+                  ...harvestForm,
+                  actualQuantity: String(estimate?.currentCount || ''),
+                  actualWeightKg: harvestForm.actualWeightKg || String(estimate?.estimatedHarvestKg || ''),
+                })
+              }
+            >
+              Harvest All
+            </Button>
+          </div>
+          <Field label="Actual Quantity Harvested" required hint="Only this many fish are removed from the batch.">
+            <Input type="number" min="1" max={estimate?.currentCount} step="1" required value={harvestForm.actualQuantity} onChange={(e) => setHarvestForm({ ...harvestForm, actualQuantity: e.target.value })} />
           </Field>
           <Field label="Actual Total Weight (kg)" required>
             <Input type="number" step="any" min="0" required value={harvestForm.actualWeightKg} onChange={(e) => setHarvestForm({ ...harvestForm, actualWeightKg: e.target.value })} />
@@ -222,7 +243,11 @@ export default function HarvestEstimation() {
           <Field label="Notes">
             <Textarea value={harvestForm.notes} onChange={(e) => setHarvestForm({ ...harvestForm, notes: e.target.value })} />
           </Field>
-          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">Logging a harvest closes this production cycle.</p>
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            {Number(harvestForm.actualQuantity) >= (estimate?.currentCount || 0) && harvestForm.actualQuantity
+              ? 'This harvests every remaining fish and closes this batch.'
+              : 'A partial harvest keeps this batch active with the rest of the fish.'}
+          </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setHarvestModalOpen(false)}>Cancel</Button>
             <Button type="submit" loading={saving}>Confirm Harvest</Button>

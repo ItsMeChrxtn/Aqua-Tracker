@@ -8,7 +8,6 @@ import Spinner from '../../components/ui/Spinner';
 import { Select } from '../../components/ui/FormField';
 import SpeciesFilterSelect from '../charts/SpeciesFilterSelect';
 import LineTrendChart from '../charts/LineTrendChart';
-import { formatDate } from '../../utils/format';
 import { withExistingBarangays } from '../../utils/barangays';
 
 /**
@@ -39,11 +38,24 @@ export default function AgriOverviewPage({ title, description, columns, chart })
       .finally(() => setLoading(false));
   }, [barangay, speciesId]);
 
-  const chartData = useMemo(() => {
-    if (!chart) return [];
-    return [...cycles]
-      .sort((a, b) => new Date(a.lastUpdate) - new Date(b.lastUpdate))
-      .map((c) => ({ x: `${c.fishpondName} (${formatDate(c.stockingDate)})`, [chart.key]: c[chart.key] }));
+  // One point per fishpond on the x-axis and one line per species, so a pond
+  // stocking several species shows each separately.
+  const { chartData, chartSeries } = useMemo(() => {
+    if (!chart) return { chartData: [], chartSeries: [] };
+    const speciesNames = [...new Set(cycles.map((c) => c.species))].sort();
+    const keyFor = (name) => `s${speciesNames.indexOf(name)}`;
+    const byPond = new Map();
+    [...cycles]
+      .sort((a, b) => new Date(a.stockingDate) - new Date(b.stockingDate))
+      .forEach((c) => {
+        const point = byPond.get(c.fishpondId) || { x: c.fishpondName };
+        point[keyFor(c.species)] = (point[keyFor(c.species)] || 0) + (Number(c[chart.key]) || 0);
+        byPond.set(c.fishpondId, point);
+      });
+    return {
+      chartData: [...byPond.values()],
+      chartSeries: speciesNames.map((name) => ({ key: keyFor(name), label: name })),
+    };
   }, [cycles, chart]);
 
   return (
@@ -69,13 +81,13 @@ export default function AgriOverviewPage({ title, description, columns, chart })
       ) : (
         <>
           {chart && (
-            <Card title={chart.label}>
-              <LineTrendChart data={chartData} series={[{ key: chart.key, label: chart.label }]} valueFormatter={chart.valueFormatter} />
+            <Card title={`${chart.label} by Species`}>
+              <LineTrendChart data={chartData} series={chartSeries} valueFormatter={chart.valueFormatter} />
             </Card>
           )}
           <Card title={`Active Production Cycles (${cycles.length})`} padded={false}>
             <div className="p-2">
-              <DataTable columns={columns} rows={cycles} keyField="cycleId" emptyMessage="No active production cycles match this filter." />
+              <DataTable columns={columns} rows={cycles} keyField="cycleId" searchable="Search fishpond, owner, species…" emptyMessage="No active production cycles match this filter." />
             </div>
           </Card>
         </>

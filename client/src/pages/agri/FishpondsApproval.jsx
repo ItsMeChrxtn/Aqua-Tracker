@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from '../../utils/notify';
+import toast, { confirm } from '../../utils/notify';
 import { fishpondApi } from '../../api/fishponds';
 import { apiErrorMessage, assetUrl } from '../../api/client';
 import Card from '../../components/ui/Card';
@@ -27,7 +27,14 @@ export default function FishpondsApproval() {
 
   useEffect(load, [statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const approve = async (id) => {
+  const approve = async (fishpond) => {
+    const ok = await confirm(`"${fishpond.name}" by ${fishpond.owner?.name || 'this owner'} will be approved so the owner can start monitoring.`, {
+      title: 'Approve this fishpond?',
+      confirmLabel: 'Yes, approve',
+      danger: false,
+    });
+    if (!ok) return;
+    const id = fishpond._id;
     setBusyId(id);
     try {
       await fishpondApi.approve(id);
@@ -86,7 +93,7 @@ export default function FishpondsApproval() {
                   ),
               },
               { key: 'name', header: 'Fishpond' },
-              { key: 'owner', header: 'Owner', render: (f) => f.owner?.name },
+              { key: 'owner', header: 'Owner', render: (f) => f.owner?.name, value: (f) => f.owner?.name },
               { key: 'barangay', header: 'Barangay' },
               { key: 'areaSize', header: 'Area', render: (f) => formatArea(f.areaSize) },
               { key: 'capacity', header: 'Capacity', render: (f) => formatCapacity(f.capacity) },
@@ -98,13 +105,14 @@ export default function FishpondsApproval() {
                 render: (f) =>
                   f.status === 'pending' && (
                     <div className="flex gap-1.5">
-                      <IconButton icon="check" label="Approve" tone="success" loading={busyId === f._id} onClick={() => approve(f._id)} />
+                      <IconButton icon="check" label="Approve" tone="success" loading={busyId === f._id} onClick={() => approve(f)} />
                       <IconButton icon="close" label="Reject" tone="danger" onClick={() => setRejectTarget(f)} />
                     </div>
                   ),
               },
             ]}
-            rows={fishponds}
+            rows={[...fishponds].sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1))}
+            searchable="Search fishpond, owner, barangay…"
             emptyMessage="No fishponds found."
           />
         </div>

@@ -57,10 +57,17 @@ export function showSuccess(message) {
   base.fire({ icon: 'success', title: 'Success!', text: message, timer: SUCCESS_AUTO_CLOSE_MS, timerProgressBar: true });
 }
 
-export function showError(message) {
+export function showError(message, { title = 'Oops…', confirmText = 'OK' } = {}) {
   clearTimeout(fallbackTimer);
   loading = false;
-  base.fire({ icon: 'error', title: 'Oops…', text: message, confirmButtonColor: DANGER });
+  base.fire({ icon: 'error', title, text: message, confirmButtonText: confirmText, confirmButtonColor: DANGER });
+}
+
+// Closes the loading modal without showing any result.
+export function dismiss() {
+  clearTimeout(fallbackTimer);
+  loading = false;
+  Swal.close();
 }
 
 // Informational alert that stays open until dismissed.

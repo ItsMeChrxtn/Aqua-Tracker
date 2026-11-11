@@ -28,30 +28,34 @@ async function buildRows(req) {
   const fishpondFilter = req.user.role === 'fishpond_owner' ? { owner: req.user._id } : {};
   if (req.query.barangay) fishpondFilter.barangay = req.query.barangay;
 
-  const fishponds = await Fishpond.find(fishpondFilter);
+  const fishponds = await Fishpond.find(fishpondFilter).populate('owner', 'name');
   const fishpondIds = fishponds.map((f) => f._id);
   const fishpondById = new Map(fishponds.map((f) => [f._id.toString(), f]));
 
   const cycles = await ProductionCycle.find({ fishpond: { $in: fishpondIds } }).populate('species');
 
+  const terms = String(req.query.q || '').toLowerCase().split(/\s+/).filter(Boolean);
   const rows = [];
   for (const cycle of cycles) {
     const estimate = await computeHarvestEstimate({ ...cycle.toObject(), fishpond: fishpondById.get(cycle.fishpond.toString()), species: cycle.species });
     const fishpond = fishpondById.get(cycle.fishpond.toString());
-    rows.push({
+    const row = {
       fishpond: fishpond ? fishpond.name : 'Unknown',
+      owner: fishpond && fishpond.owner ? fishpond.owner.name : 'Unknown',
       barangay: fishpond ? fishpond.barangay : '',
       species: cycle.species ? cycle.species.name : '',
       batch: cycle.batchName || '-',
       stockingDate: cycle.stockingDate,
       status: cycle.status,
-      initialCount: cycle.initialCount,
+      totalStocked: estimate.totalStocked,
       currentCount: estimate.currentCount,
       survivalRate: estimate.survivalRate,
       averageWeight: estimate.averageWeight,
       estimatedHarvestKg: estimate.estimatedHarvestKg,
       readiness: READINESS_LABEL[estimate.readinessStatus] || estimate.readinessStatus,
-    });
+    };
+    const haystack = [row.fishpond, row.owner, row.barangay, row.species, row.batch, row.status, row.readiness].join(' ').toLowerCase();
+    if (terms.every((t) => haystack.includes(t))) rows.push(row);
   }
   return rows;
 }
@@ -66,12 +70,13 @@ const exportExcel = asyncHandler(async (req, res) => {
 
   sheet.columns = [
     { header: 'Fishpond', key: 'fishpond', width: 22 },
+    { header: 'Owner', key: 'owner', width: 22 },
     { header: 'Barangay', key: 'barangay', width: 16 },
     { header: 'Species', key: 'species', width: 16 },
     { header: 'Batch', key: 'batch', width: 12 },
     { header: 'Stocking Date', key: 'stockingDate', width: 16 },
     { header: 'Status', key: 'status', width: 12 },
-    { header: 'Initial Count', key: 'initialCount', width: 14 },
+    { header: 'Total Stocked', key: 'totalStocked', width: 14 },
     { header: 'Current Count', key: 'currentCount', width: 14 },
     { header: 'Survival Rate (%)', key: 'survivalRate', width: 16 },
     { header: 'Avg. Weight (g)', key: 'averageWeight', width: 16 },
@@ -104,8 +109,8 @@ const exportPdf = asyncHandler(async (req, res) => {
   doc.fontSize(9).fillColor('#555').text(`Generated ${generatedAt} by ${req.user.name}`, { align: 'center' });
   doc.moveDown(1);
 
-  const headers = ['Fishpond', 'Barangay', 'Species', 'Batch', 'Status', 'Stocked', 'Current', 'Survival %', 'Avg Wt (g)', 'Est. Harvest (kg)', 'Readiness'];
-  const colWidths = [90, 70, 65, 50, 55, 50, 50, 55, 60, 70, 75];
+  const headers = ['Fishpond', 'Owner', 'Barangay', 'Species', 'Batch', 'Status', 'Stocked', 'Current', 'Survival %', 'Avg Wt (g)', 'Est. Harvest (kg)', 'Readiness'];
+  const colWidths = [82, 78, 62, 62, 44, 50, 46, 46, 50, 50, 64, 66];
   const startX = doc.page.margins.left;
   let y = doc.y;
 
@@ -124,11 +129,12 @@ const exportPdf = asyncHandler(async (req, res) => {
   rows.forEach((row) => {
     const values = [
       row.fishpond,
+      row.owner,
       row.barangay,
       row.species,
       row.batch,
       row.status,
-      String(row.initialCount),
+      String(row.totalStocked),
       String(row.currentCount),
       String(row.survivalRate),
       String(row.averageWeight),

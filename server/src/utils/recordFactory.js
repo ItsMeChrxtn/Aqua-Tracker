@@ -22,7 +22,9 @@ function buildDateFilter(query) {
  *   charts use so history and species filtering work as requested.
  * - create: always cycle-scoped (a new reading belongs to the active batch)
  */
-function createRecordHandlers(Model, { targetType, pickFields, onCreated }) {
+// Optional hooks: `prepare` can validate against the cycle and adjust the data
+// before it is saved; `onRemoved` runs after a record is deleted.
+function createRecordHandlers(Model, { targetType, pickFields, onCreated, prepare, onRemoved }) {
   const listByCycle = asyncHandler(async (req, res) => {
     const cycle = await loadCycleWithAccess(req.user, req.params.cycleId);
     const filter = { cycle: cycle._id };
@@ -55,7 +57,8 @@ function createRecordHandlers(Model, { targetType, pickFields, onCreated }) {
 
   const create = asyncHandler(async (req, res) => {
     const cycle = await loadCycleWithAccess(req.user, req.params.cycleId);
-    const data = pickFields(req.body);
+    let data = pickFields(req.body);
+    if (prepare) data = await prepare({ data, cycle, req });
 
     const record = await Model.create({
       cycle: cycle._id,
@@ -77,6 +80,7 @@ function createRecordHandlers(Model, { targetType, pickFields, onCreated }) {
     await loadCycleWithAccess(req.user, record.cycle);
 
     await record.deleteOne();
+    if (onRemoved) await onRemoved({ record, req });
     await logActivity(req, { action: 'DELETE', targetType, targetId: req.params.id, details: `Deleted ${targetType} record` });
 
     res.json({ success: true, message: 'Record deleted' });

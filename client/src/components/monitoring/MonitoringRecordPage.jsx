@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import toast, { confirm } from '../../utils/notify';
 import { cycleApi } from '../../api/fishponds';
 import { useOwnerFishponds } from '../../hooks/useOwnerFishponds';
-import { useSpeciesList } from '../../hooks/useSpeciesList';
 import { apiErrorMessage } from '../../api/client';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -35,14 +34,14 @@ function buildInitialForm(fields) {
  */
 export default function MonitoringRecordPage({ title, description, api, fields, chartMetricKey, chartLabel, emptyIcon = 'clipboard', addLabel }) {
   const { fishponds, loading: loadingFishponds } = useOwnerFishponds();
-  const { species } = useSpeciesList();
 
   const [fishpondId, setFishpondId] = useState('');
   const [speciesFilter, setSpeciesFilter] = useState('');
   const [batchFilter, setBatchFilter] = useState('');
   const [records, setRecords] = useState([]);
   const [cycles, setCycles] = useState([]);
-  const [activeCycles, setActiveCycles] = useState([]);
+  const [pondCycles, setPondCycles] = useState([]);
+  const [fieldOptions, setFieldOptions] = useState({});
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(buildInitialForm(fields));
@@ -69,14 +68,20 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
 
   useEffect(() => {
     if (!fishpondId) return;
-    cycleApi.listForFishpond(fishpondId, { status: 'active' }).then((list) => {
-      setActiveCycles(list);
-      setSelectedCycle(list[0]?._id || '');
-    });
+    cycleApi.listForFishpond(fishpondId).then(setPondCycles);
   }, [fishpondId]);
+
+  const activeCycles = pondCycles.filter((c) => c.status === 'active');
+
+  // Only the species this fishpond has actually stocked, from its cycles.
+  const pondSpecies = [...new Map(pondCycles.filter((c) => c.species).map((c) => [c.species._id, c.species])).values()].sort((a, b) => a.name.localeCompare(b.name));
 
   const openModal = () => {
     setForm(buildInitialForm(fields));
+    setSelectedCycle(activeCycles[0]?._id || '');
+    fields
+      .filter((f) => f.loadOptions)
+      .forEach((f) => f.loadOptions(fishpondId).then((options) => setFieldOptions((o) => ({ ...o, [f.name]: options }))));
     setModalOpen(true);
   };
 
@@ -118,11 +123,11 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
 
   const columns = [
     { key: 'date', header: 'Date', render: (r) => formatDate(r.date) },
-    { key: 'species', header: 'Species', render: (r) => r.cycle?.species?.name || '—' },
+    { key: 'species', header: 'Species', render: (r) => r.cycle?.species?.name || '—', value: (r) => r.cycle?.species?.name },
     ...fields
       .filter((f) => f.name !== 'date')
       .map((f) => ({ key: f.name, header: f.label, render: (r) => (r[f.name] !== undefined && r[f.name] !== '' ? `${r[f.name]}${f.unit ? ` ${f.unit}` : ''}` : '—') })),
-    { key: 'batch', header: 'Batch', render: (r) => batchLabel(r.cycle) },
+    { key: 'batch', header: 'Batch', render: (r) => batchLabel(r.cycle), value: (r) => batchLabel(r.cycle) },
     {
       key: 'actions',
       header: '',
@@ -172,7 +177,7 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
           ))}
         </Select>
         <SpeciesFilterSelect
-          species={species}
+          species={pondSpecies}
           value={speciesFilter}
           onChange={(value) => {
             setSpeciesFilter(value);
@@ -197,7 +202,7 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
 
       <Card title="Records" padded={false}>
         <div className="p-2">
-          <DataTable columns={columns} rows={visibleRecords} loading={loading} />
+          <DataTable columns={columns} rows={visibleRecords} loading={loading} searchable="Search records…" />
         </div>
       </Card>
 
@@ -223,6 +228,15 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
             <Field key={f.name} label={f.label} required={f.required} hint={f.hint}>
               {f.type === 'textarea' ? (
                 <Textarea value={form[f.name]} onChange={(e) => setForm({ ...form, [f.name]: e.target.value })} />
+              ) : f.type === 'select' ? (
+                <Select required={f.required} value={form[f.name]} onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}>
+                  <option value="">{f.placeholder || 'Select…'}</option>
+                  {(fieldOptions[f.name] || f.options || []).map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </Select>
               ) : f.type === 'selectWithOther' ? (
                 <SelectWithOther
                   options={f.options}

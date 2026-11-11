@@ -57,6 +57,7 @@ export default function FishpondOwners() {
               },
             ]}
             rows={owners}
+            searchable="Search name, email, barangay…"
             emptyMessage="No fishpond owners have registered yet."
           />
         </div>

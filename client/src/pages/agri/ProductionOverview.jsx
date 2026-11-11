@@ -8,7 +8,7 @@ const columns = [
   { key: 'barangay', header: 'Barangay' },
   { key: 'species', header: 'Species' },
   { key: 'stockingDate', header: 'Stocking Date', render: (r) => formatDate(r.stockingDate) },
-  { key: 'initialCount', header: 'Stocked', render: (r) => formatNumber(r.initialCount) },
+  { key: 'totalStocked', header: 'Stocked', render: (r) => formatNumber(r.totalStocked) },
   { key: 'currentCount', header: 'Current', render: (r) => formatNumber(r.currentCount) },
   { key: 'readinessStatus', header: 'Status', render: (r) => <Badge className={READINESS_BADGE_CLASS[r.readinessStatus]}>{READINESS_LABEL[r.readinessStatus]}</Badge> },
 ];

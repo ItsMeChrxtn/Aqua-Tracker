@@ -31,7 +31,9 @@ const getHistory = asyncHandler(async (req, res) => {
   res.json({ success: true, logs });
 });
 
-// POST /api/cycles/:cycleId/harvest — log the actual harvest, closes the cycle
+// POST /api/cycles/:cycleId/harvest — logs a harvest of some or all remaining
+// fish. Only the harvested quantity leaves the pond; the cycle closes once no
+// fish remain.
 const logHarvest = asyncHandler(async (req, res) => {
   const cycle = await loadCycleWithAccess(req.user, req.params.cycleId);
   if (cycle.status !== 'active') throw new ApiError(400, 'Only active cycles can be harvested');
@@ -40,19 +42,30 @@ const logHarvest = asyncHandler(async (req, res) => {
   if (!date || actualQuantity === undefined || actualWeightKg === undefined) {
     throw new ApiError(400, 'Date, actual quantity, and actual weight (kg) are required');
   }
+  const quantity = Number(actualQuantity);
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new ApiError(400, 'Quantity harvested must be a whole number greater than zero');
+  if (!(Number(actualWeightKg) >= 0)) throw new ApiError(400, 'Total weight cannot be negative');
+
+  const { currentCount } = await computeHarvestEstimate(cycle);
+  if (quantity > currentCount) {
+    throw new ApiError(400, `Only ${currentCount} fish remain in this batch, so you cannot harvest ${quantity}.`);
+  }
 
   const harvest = await HarvestRecord.create({
     cycle: cycle._id,
     fishpond: cycle.fishpond._id,
     date,
-    actualQuantity,
+    actualQuantity: quantity,
     actualWeightKg,
     notes,
     recordedBy: req.user._id,
   });
 
-  cycle.status = 'harvested';
-  await cycle.save();
+  const remaining = currentCount - quantity;
+  if (remaining === 0) {
+    cycle.status = 'harvested';
+    await cycle.save();
+  }
 
   await createNotification({
     user: cycle.fishpond.owner,
@@ -62,7 +75,7 @@ const logHarvest = asyncHandler(async (req, res) => {
   });
   await logActivity(req, { action: 'CREATE', targetType: 'HarvestRecord', targetId: harvest._id, details: `Logged harvest for ${cycle.fishpond.name}` });
 
-  res.status(201).json({ success: true, harvest, cycle });
+  res.status(201).json({ success: true, harvest, cycle, remaining, closed: remaining === 0 });
 });
 
 module.exports = { getEstimate, getHistory, logHarvest };

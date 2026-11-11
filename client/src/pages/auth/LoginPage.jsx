@@ -21,21 +21,24 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login(form.email, form.password);
+      toast.dismiss();
       if (user.mustChangePassword) {
         navigate('/change-password', { replace: true });
-        toast.success(`Welcome, ${user.name}! Please set your own password to continue.`);
         return;
       }
       const redirectTo = location.state?.from?.pathname || ROLE_HOME[user.role] || '/';
       navigate(redirectTo, { replace: true });
-      toast.success(`Welcome back, ${user.name}!`);
     } catch (err) {
       if (err.response?.data?.code === 'EMAIL_NOT_VERIFIED') {
         toast.error(err.response.data.message);
         navigate('/verify-email', { state: { email: err.response.data.email } });
         return;
       }
-      toast.error(apiErrorMessage(err, 'Login failed'));
+      const wrongCredentials = err.response?.status === 401;
+      toast.error(wrongCredentials ? 'Please check your email and password and try again.' : apiErrorMessage(err, 'Please try again.'), {
+        title: 'Log in Failed',
+        confirmText: 'Try again',
+      });
     } finally {
       setLoading(false);
     }

@@ -96,20 +96,21 @@ export default function InventoryManagement() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">Inventory &amp; Resources</h2>
-          <p className="text-sm text-slate-600">Tracks feed, medicine, and other pond inputs — flags items at or below their reorder level.</p>
-        </div>
-        <Button icon="plus" onClick={() => { setForm(EMPTY_FORM); setAddOpen(true); }}>Add Item</Button>
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900">Inventory &amp; Resources</h2>
+        <p className="text-sm text-slate-600">Tracks feed, medicine, and other pond inputs — flags items at or below their reorder level.</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Select value={fishpondId} onChange={(e) => setFishpondId(e.target.value)} className="w-56">
-          {fishponds.map((f) => (
-            <option key={f._id} value={f._id}>{f.name}</option>
-          ))}
-        </Select>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="block">
+          <span className="mb-1.5 block text-[13px] font-semibold text-slate-700">Fishpond</span>
+          <Select value={fishpondId} onChange={(e) => setFishpondId(e.target.value)} className="w-64">
+            {fishponds.map((f) => (
+              <option key={f._id} value={f._id}>{f.name}</option>
+            ))}
+          </Select>
+        </label>
+        <Button icon="plus" onClick={() => { setForm(EMPTY_FORM); setAddOpen(true); }}>Add Item</Button>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -125,12 +126,13 @@ export default function InventoryManagement() {
             <DataTable
               columns={[
                 { key: 'name', header: 'Item' },
-                { key: 'category', header: 'Category', render: (i) => CATEGORY_LABEL[i.category] || i.category },
+                { key: 'category', header: 'Category', render: (i) => CATEGORY_LABEL[i.category] || i.category, value: (i) => CATEGORY_LABEL[i.category] || i.category },
                 { key: 'currentStock', header: 'Current Stock', render: (i) => `${formatNumber(i.currentStock, 1)} ${i.unit}` },
                 { key: 'reorderLevel', header: 'Reorder Level', render: (i) => `${formatNumber(i.reorderLevel, 1)} ${i.unit}` },
                 {
                   key: 'status',
                   header: 'Status',
+                  value: (i) => (i.currentStock <= i.reorderLevel ? 'Low Stock' : 'OK'),
                   render: (i) =>
                     i.currentStock <= i.reorderLevel ? (
                       <Badge className="bg-rose-50 text-rose-700 border-rose-300">Low Stock</Badge>
@@ -151,13 +153,14 @@ export default function InventoryManagement() {
                 },
               ]}
               rows={items}
+              searchable="Search items…"
               emptyMessage="No inventory items yet. Add feed, medicine, or other pond inputs to start tracking stock."
             />
           </div>
         </Card>
       )}
 
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Add Inventory Item">
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title={`Add Inventory Item — ${fishponds.find((f) => f._id === fishpondId)?.name || ''}`}>
         <form onSubmit={submitAdd} className="space-y-4">
           <Field label="Item Name" required>
             <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Tilapia Pellets (Grower)" />

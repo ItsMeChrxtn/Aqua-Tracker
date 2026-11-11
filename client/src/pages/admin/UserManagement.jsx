@@ -123,7 +123,7 @@ export default function UserManagement() {
             columns={[
               { key: 'name', header: 'Name' },
               { key: 'email', header: 'Email' },
-              { key: 'role', header: 'Role', render: (u) => <Badge className={ROLE_BADGE[u.role]}>{ROLE_LABEL[u.role]}</Badge> },
+              { key: 'role', header: 'Role', value: (u) => ROLE_LABEL[u.role], render: (u) => <Badge className={ROLE_BADGE[u.role]}>{ROLE_LABEL[u.role]}</Badge> },
               { key: 'barangay', header: 'Barangay', render: (u) => u.barangay || '—' },
               { key: 'status', header: 'Status', render: (u) => <Badge className={u.status === 'active' ? 'bg-leaf-50 text-leaf-700 border-leaf-300' : 'bg-slate-50 text-slate-600 border-slate-300'}>{u.status}</Badge> },
               {
@@ -132,18 +132,21 @@ export default function UserManagement() {
                 render: (u) => (
                   <div className="flex gap-1.5">
                     <IconButton icon="key" label="Reset Password" tone="brand" onClick={() => resetPassword(u)} />
-                    <IconButton
-                      icon={u.status === 'active' ? 'userOff' : 'userOn'}
-                      label={u.status === 'active' ? 'Deactivate' : 'Activate'}
-                      tone={u.status === 'active' ? 'warning' : 'success'}
-                      onClick={() => toggleStatus(u)}
-                    />
+                    {(u.role !== 'admin' || u.status !== 'active') && (
+                      <IconButton
+                        icon={u.status === 'active' ? 'userOff' : 'userOn'}
+                        label={u.status === 'active' ? 'Deactivate' : 'Activate'}
+                        tone={u.status === 'active' ? 'warning' : 'success'}
+                        onClick={() => toggleStatus(u)}
+                      />
+                    )}
                     <IconButton icon="trash" label="Delete" tone="danger" onClick={() => removeUser(u)} />
                   </div>
                 ),
               },
             ]}
             rows={users}
+            searchable="Search name, email…"
             emptyMessage="No accounts found."
           />
         </div>

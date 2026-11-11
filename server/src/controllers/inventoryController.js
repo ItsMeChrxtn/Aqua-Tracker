@@ -3,7 +3,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { ApiError } = require('../middleware/errorHandler');
 const { loadFishpondWithAccess } = require('../utils/access');
 const { logActivity } = require('../utils/activityLog');
-const { createNotification } = require('../utils/notify');
+const { changeStock } = require('../utils/inventory');
 
 const listForFishpond = asyncHandler(async (req, res) => {
   const fishpond = await loadFishpondWithAccess(req.user, req.params.fishpondId);
@@ -59,15 +59,8 @@ const adjustStock = asyncHandler(async (req, res) => {
   if (!qty || qty <= 0) throw new ApiError(400, 'Quantity must be greater than zero');
   if (!['restock', 'use'].includes(type)) throw new ApiError(400, 'Adjustment type must be "restock" or "use"');
 
-  const wasLow = item.currentStock <= item.reorderLevel;
-
-  if (type === 'restock') {
-    item.currentStock += qty;
-  } else {
-    if (qty > item.currentStock) throw new ApiError(400, 'Cannot use more than the current stock on hand');
-    item.currentStock -= qty;
-  }
-  await item.save();
+  if (type === 'use' && qty > item.currentStock) throw new ApiError(400, 'Cannot use more than the current stock on hand');
+  await changeStock(item, type === 'restock' ? qty : -qty);
 
   await logActivity(req, {
     action: 'UPDATE',
@@ -76,15 +69,6 @@ const adjustStock = asyncHandler(async (req, res) => {
     details: `${type === 'restock' ? 'Restocked' : 'Used'} ${qty} ${item.unit} of ${item.name}`,
   });
 
-  const isLowNow = item.currentStock <= item.reorderLevel;
-  if (isLowNow && !wasLow) {
-    await createNotification({
-      user: item.fishpond.owner,
-      fishpond: item.fishpond._id,
-      type: 'low_stock',
-      message: `Low stock alert: ${item.name} at ${item.fishpond.name} is down to ${item.currentStock} ${item.unit} (reorder level: ${item.reorderLevel} ${item.unit}).`,
-    });
-  }
 
   res.json({ success: true, item });
 });

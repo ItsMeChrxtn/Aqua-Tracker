@@ -17,11 +17,11 @@ async function blobErrorMessage(err) {
 
 // Downloads use JWT bearer auth (not cookies), so a plain <a href> won't carry
 // the Authorization header — fetch as a blob instead and trigger the save.
-export async function downloadFile(url, fallbackFilename) {
+export async function downloadFile(url, fallbackFilename, params) {
   startLoading('Preparing your file…');
   let res;
   try {
-    res = await client.get(url, { responseType: 'blob' });
+    res = await client.get(url, { responseType: 'blob', params });
     finishLoading({ type: 'success', message: 'Download started.' });
   } catch (err) {
     const message = await blobErrorMessage(err);

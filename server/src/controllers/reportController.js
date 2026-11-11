@@ -26,7 +26,7 @@ const ownerSummary = asyncHandler(async (req, res) => {
 
   for (const cycle of activeCycles) {
     const estimate = await computeHarvestEstimate(cycle);
-    totalStocked += cycle.initialCount;
+    totalStocked += estimate.totalStocked;
     totalMortality += estimate.totalMortality;
     totalCurrent += estimate.currentCount;
     totalEstimatedHarvestKg += estimate.estimatedHarvestKg;
@@ -35,7 +35,8 @@ const ownerSummary = asyncHandler(async (req, res) => {
       fishpondId: cycle.fishpond._id,
       fishpondName: cycle.fishpond.name,
       species: cycle.species ? cycle.species.name : 'Unknown species',
-      stocked: cycle.initialCount,
+      batchName: cycle.batchName,
+      stocked: estimate.totalStocked,
       remaining: estimate.currentCount,
       survivalRate: estimate.survivalRate,
       estimatedHarvestKg: estimate.estimatedHarvestKg,
@@ -108,7 +109,7 @@ const municipalSummary = asyncHandler(async (req, res) => {
     const estimate = await computeHarvestEstimate(cycle);
     totalEstimatedHarvestKg += estimate.estimatedHarvestKg;
 
-    const mortalityPercent = cycle.initialCount > 0 ? (estimate.totalMortality / cycle.initialCount) * 100 : 0;
+    const mortalityPercent = estimate.totalStocked > 0 ? (estimate.totalMortality / estimate.totalStocked) * 100 : 0;
     const row = {
       cycleId: cycle._id,
       fishpondId: cycle.fishpond._id,
@@ -120,6 +121,7 @@ const municipalSummary = asyncHandler(async (req, res) => {
       batchName: cycle.batchName,
       stockingDate: cycle.stockingDate,
       initialCount: cycle.initialCount,
+      totalStocked: estimate.totalStocked,
       currentCount: estimate.currentCount,
       totalMortality: estimate.totalMortality,
       mortalityPercent: Number(mortalityPercent.toFixed(1)),

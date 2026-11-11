@@ -42,10 +42,10 @@ export default function SurvivalMonitoring() {
 
         if (activeCycles.length > 0) {
           const estimates = await Promise.all(activeCycles.map((c) => harvestApi.getEstimate(c._id)));
-          const totalStocked = activeCycles.reduce((s, c) => s + c.initialCount, 0);
+          const totalStocked = estimates.reduce((s, e) => s + e.totalStocked, 0);
           const totalCurrent = estimates.reduce((s, e) => s + e.currentCount, 0);
           const totalMortality = estimates.reduce((s, e) => s + e.totalMortality, 0);
-          const survivalRate = totalStocked > 0 ? (totalCurrent / totalStocked) * 100 : 0;
+          const survivalRate = totalStocked > 0 ? ((totalStocked - totalMortality) / totalStocked) * 100 : 0;
           const oldestStockingDate = activeCycles.reduce(
             (min, c) => (new Date(c.stockingDate) < min ? new Date(c.stockingDate) : min),
             new Date()

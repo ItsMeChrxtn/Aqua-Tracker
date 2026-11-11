@@ -17,8 +17,9 @@ export function Field({ label, hint, error, required, children }) {
   );
 }
 
-const baseInput =
-  'block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-shadow focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/40 disabled:bg-slate-50 disabled:text-slate-400';
+const inputLook =
+  'block rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-shadow focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/40 disabled:bg-slate-50 disabled:text-slate-400';
+const baseInput = `w-full ${inputLook}`;
 
 export function Input(props) {
   return <input className={baseInput} {...props} />;
@@ -43,9 +44,9 @@ export function PasswordInput(props) {
   );
 }
 
-export function Select({ children, ...props }) {
+export function Select({ children, className, ...props }) {
   return (
-    <select className={`${baseInput} cursor-pointer`} {...props}>
+    <select className={`${inputLook} cursor-pointer ${className || 'w-full'}`} {...props}>
       {children}
     </select>
   );

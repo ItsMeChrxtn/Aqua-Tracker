@@ -89,14 +89,15 @@ export default function RegisteredList() {
           <DataTable
             columns={[
               { key: 'name', header: 'Fishpond' },
-              { key: 'owner', header: 'Owner', render: (f) => f.owner?.name },
+              { key: 'owner', header: 'Owner', render: (f) => f.owner?.name, value: (f) => f.owner?.name },
               { key: 'barangay', header: 'Barangay' },
               { key: 'areaSize', header: 'Area', render: (f) => formatArea(f.areaSize) },
               { key: 'capacity', header: 'Capacity', render: (f) => formatCapacity(f.capacity) },
               { key: 'approvedAt', header: 'Approved On', render: (f) => formatDate(f.approvedAt) },
-              { key: 'approvedBy', header: 'Approved By', render: (f) => f.approvedBy?.name || '—' },
+              { key: 'approvedBy', header: 'Approved By', render: (f) => f.approvedBy?.name || '—', value: (f) => f.approvedBy?.name },
             ]}
             rows={filtered}
+            searchable="Search fishpond, owner, barangay…"
             emptyMessage="No approved fishponds match these filters."
           />
         </div>

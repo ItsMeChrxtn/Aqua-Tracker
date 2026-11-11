@@ -102,7 +102,16 @@ const updateUser = asyncHandler(async (req, res) => {
     if (!validRoles.includes(role)) throw new ApiError(400, `Role must be one of: ${validRoles.join(', ')}`);
     user.role = role;
   }
-  if (status !== undefined) user.status = status;
+  if (status !== undefined) {
+    if (status !== 'active' && user.role === 'admin') {
+      throw new ApiError(400, 'Administrator accounts cannot be deactivated.');
+    }
+    user.status = status;
+  }
+  if (user.role === 'admin' && user.status !== 'active') {
+    // e.g. an inactive account being promoted to admin
+    user.status = 'active';
+  }
 
   await user.save();
   await logActivity(req, { action: 'UPDATE', targetType: 'User', targetId: user._id, details: `Updated user ${user.email}` });

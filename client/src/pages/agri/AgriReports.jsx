@@ -3,7 +3,7 @@ import toast from '../../utils/notify';
 import { reportApi } from '../../api/misc';
 import { downloadFile } from '../../utils/download';
 import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
+import ExportMenu from '../../components/ui/ExportMenu';
 import Badge from '../../components/ui/Badge';
 import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
@@ -13,6 +13,7 @@ export default function AgriReports() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState('');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     reportApi.municipalSummary().then(setData).finally(() => setLoading(false));
@@ -21,8 +22,9 @@ export default function AgriReports() {
   const exportAs = async (type) => {
     setExporting(type);
     try {
-      if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), 'aquatrack-municipal-report.xlsx');
-      else await downloadFile(reportApi.exportPdfUrl(), 'aquatrack-municipal-report.pdf');
+      const params = query ? { q: query } : undefined;
+      if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), 'aquatrack-municipal-report.xlsx', params);
+      else await downloadFile(reportApi.exportPdfUrl(), 'aquatrack-municipal-report.pdf', params);
       toast.success('Report downloaded');
     } catch (err) {
       if (!err?.handled) toast.error('Export failed');
@@ -38,10 +40,7 @@ export default function AgriReports() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-slate-900">Municipal Reports</h2>
-        <div className="flex gap-2">
-          <Button variant="secondary" icon="download" loading={exporting === 'excel'} onClick={() => exportAs('excel')}>Export Excel</Button>
-          <Button variant="secondary" icon="download" loading={exporting === 'pdf'} onClick={() => exportAs('pdf')}>Export PDF</Button>
-        </div>
+        <ExportMenu onExport={exportAs} loading={!!exporting} />
       </div>
 
       <Card title={`All Active Production Cycles (${data.allCycles.length})`} padded={false}>
@@ -53,13 +52,16 @@ export default function AgriReports() {
               { key: 'barangay', header: 'Barangay' },
               { key: 'species', header: 'Species' },
               { key: 'stockingDate', header: 'Stocking Date', render: (r) => formatDate(r.stockingDate) },
-              { key: 'initialCount', header: 'Stocked', render: (r) => formatNumber(r.initialCount) },
+              { key: 'totalStocked', header: 'Stocked', render: (r) => formatNumber(r.totalStocked) },
               { key: 'survivalRate', header: 'Survival %' },
               { key: 'estimatedHarvestKg', header: 'Est. Harvest (kg)' },
-              { key: 'readinessStatus', header: 'Status', render: (r) => <Badge className={READINESS_BADGE_CLASS[r.readinessStatus]}>{READINESS_LABEL[r.readinessStatus]}</Badge> },
+              { key: 'readinessStatus', header: 'Status', value: (r) => READINESS_LABEL[r.readinessStatus], render: (r) => <Badge className={READINESS_BADGE_CLASS[r.readinessStatus]}>{READINESS_LABEL[r.readinessStatus]}</Badge> },
             ]}
             rows={data.allCycles}
             keyField="cycleId"
+            searchable="Search fishpond, owner, barangay, species…"
+            query={query}
+            onQueryChange={setQuery}
             emptyMessage="No active production cycles yet."
           />
         </div>

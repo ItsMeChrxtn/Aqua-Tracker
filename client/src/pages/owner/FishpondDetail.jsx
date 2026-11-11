@@ -55,8 +55,6 @@ export default function FishpondDetail() {
   if (loading) return <Spinner />;
   if (!fishpond) return null;
 
-  const hasActiveCycle = cycles.some((c) => c.status === 'active');
-
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -83,11 +81,9 @@ export default function FishpondDetail() {
         <Card
           title="Production Cycles (Batches)"
           action={
-            !hasActiveCycle && (
-              <Button size="sm" icon="plus" onClick={() => setModalOpen(true)}>
-                Start New Cycle
-              </Button>
-            )
+            <Button size="sm" icon="plus" onClick={() => setModalOpen(true)}>
+              Start New Cycle
+            </Button>
           }
         >
           <DataTable
