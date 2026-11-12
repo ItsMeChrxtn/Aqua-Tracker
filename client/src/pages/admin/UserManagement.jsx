@@ -66,6 +66,14 @@ export default function UserManagement() {
   };
 
   const toggleStatus = async (user) => {
+    const deactivating = user.status === 'active';
+    const ok = await confirm(
+      deactivating
+        ? `${user.name} will no longer be able to sign in until the account is activated again.`
+        : `${user.name} will be able to sign in again.`,
+      { title: deactivating ? 'Deactivate this account?' : 'Activate this account?', danger: deactivating }
+    );
+    if (!ok) return;
     try {
       await userApi.update(user._id, { status: user.status === 'active' ? 'inactive' : 'active' });
       toast.success(`Account ${user.status === 'active' ? 'deactivated' : 'activated'}`);
@@ -76,7 +84,7 @@ export default function UserManagement() {
   };
 
   const removeUser = async (user) => {
-    if (!(await confirm(`Delete account for ${user.name}?`))) return;
+    if (!(await confirm(`Delete account for ${user.name}?`, { title: 'Delete this account?' }))) return;
     try {
       await userApi.remove(user._id);
       toast.success('Account deleted');
@@ -89,7 +97,7 @@ export default function UserManagement() {
   const resetPassword = async (user) => {
     const ok = await confirm(`A new temporary password will be emailed to ${user.email}, and they must change it on their next sign-in.`, {
       title: `Reset password for ${user.name}?`,
-      confirmLabel: 'Yes, reset it',
+      danger: false,
     });
     if (!ok) return;
     try {
@@ -124,22 +132,30 @@ export default function UserManagement() {
               { key: 'name', header: 'Name' },
               { key: 'email', header: 'Email' },
               { key: 'role', header: 'Role', value: (u) => ROLE_LABEL[u.role], render: (u) => <Badge className={ROLE_BADGE[u.role]}>{ROLE_LABEL[u.role]}</Badge> },
+              { key: 'phone', header: 'Phone', render: (u) => u.phone || '—' },
               { key: 'barangay', header: 'Barangay', render: (u) => u.barangay || '—' },
-              { key: 'status', header: 'Status', render: (u) => <Badge className={u.status === 'active' ? 'bg-leaf-50 text-leaf-700 border-leaf-300' : 'bg-slate-50 text-slate-600 border-slate-300'}>{u.status}</Badge> },
+              { key: 'status', header: 'Status', value: (u) => u.status, render: (u) => <Badge className={u.status === 'active' ? 'bg-leaf-50 text-leaf-700 border-leaf-300' : 'bg-slate-50 text-slate-600 border-slate-300'}>{u.status}</Badge> },
               {
                 key: 'actions',
                 header: '',
                 render: (u) => (
                   <div className="flex gap-1.5">
                     <IconButton icon="key" label="Reset Password" tone="brand" onClick={() => resetPassword(u)} />
-                    {(u.role !== 'admin' || u.status !== 'active') && (
-                      <IconButton
-                        icon={u.status === 'active' ? 'userOff' : 'userOn'}
-                        label={u.status === 'active' ? 'Deactivate' : 'Activate'}
-                        tone={u.status === 'active' ? 'warning' : 'success'}
-                        onClick={() => toggleStatus(u)}
-                      />
-                    )}
+                    {/* Eye open = active (on), eye closed = inactive (off).
+                        Administrators stay active, so their toggle is disabled. */}
+                    <IconButton
+                      icon={u.status === 'active' ? 'eye' : 'eyeOff'}
+                      label={
+                        u.role === 'admin' && u.status === 'active'
+                          ? 'Administrator accounts stay active'
+                          : u.status === 'active'
+                            ? 'Active — click to deactivate'
+                            : 'Inactive — click to activate'
+                      }
+                      tone={u.status === 'active' ? 'success' : 'neutral'}
+                      disabled={u.role === 'admin' && u.status === 'active'}
+                      onClick={() => toggleStatus(u)}
+                    />
                     <IconButton icon="trash" label="Delete" tone="danger" onClick={() => removeUser(u)} />
                   </div>
                 ),

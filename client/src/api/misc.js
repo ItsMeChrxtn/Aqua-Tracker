@@ -29,6 +29,7 @@ export const activityLogApi = {
 
 export const settingsApi = {
   get: () => client.get('/settings').then((r) => r.data.settings),
+  getPublic: () => client.get('/settings/public').then((r) => r.data.settings),
   update: (data) => client.put('/settings', data).then((r) => r.data.settings),
 };
 

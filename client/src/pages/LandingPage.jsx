@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { settingsApi } from '../api/misc';
 import { Link } from 'react-router-dom';
 import Icon from '../components/ui/Icon';
 import Button from '../components/ui/Button';
@@ -370,6 +371,8 @@ export default function LandingPage() {
         </Reveal>
       </section>
 
+      <ContactSection />
+
       {/* Footer */}
       <footer className="bg-slate-900 py-10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 sm:flex-row sm:px-8">
@@ -385,5 +388,51 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// Office contact details, maintained by the admin in System Settings.
+function ContactSection() {
+  const [settings, setSettings] = useState(null);
+
+  useEffect(() => {
+    settingsApi.getPublic().then(setSettings).catch(() => {});
+  }, []);
+
+  if (!settings) return null;
+
+  const items = [
+    { icon: 'mail', label: 'Email', value: settings.officeContactEmail, href: settings.officeContactEmail && `mailto:${settings.officeContactEmail}` },
+    { icon: 'mobile', label: 'Phone', value: settings.officePhone, href: settings.officePhone && `tel:${settings.officePhone.replace(/[^\d+]/g, '')}` },
+    { icon: 'location', label: 'Address', value: settings.officeAddress },
+  ].filter((i) => i.value);
+
+  return (
+    <section id="contact" className="bg-white py-20">
+      <Reveal className="mx-auto max-w-4xl px-5 text-center sm:px-8">
+        <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">Contact Us</p>
+        <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight text-slate-900">{settings.officeName}</h2>
+        <p className="mt-2 text-slate-600">{settings.municipalityName}</p>
+        {items.length > 0 ? (
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {items.map((i) => (
+              <div key={i.label} className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                  <Icon name={i.icon} className="h-5 w-5" />
+                </span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{i.label}</span>
+                {i.href ? (
+                  <a href={i.href} className="break-all text-sm font-medium text-brand-700 hover:underline">{i.value}</a>
+                ) : (
+                  <span className="text-sm font-medium text-slate-800">{i.value}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-6 text-sm text-slate-500">Visit the office for questions about fishpond registration and monitoring.</p>
+        )}
+      </Reveal>
+    </section>
   );
 }

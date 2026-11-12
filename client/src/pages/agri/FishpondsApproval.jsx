@@ -30,7 +30,6 @@ export default function FishpondsApproval() {
   const approve = async (fishpond) => {
     const ok = await confirm(`"${fishpond.name}" by ${fishpond.owner?.name || 'this owner'} will be approved so the owner can start monitoring.`, {
       title: 'Approve this fishpond?',
-      confirmLabel: 'Yes, approve',
       danger: false,
     });
     if (!ok) return;

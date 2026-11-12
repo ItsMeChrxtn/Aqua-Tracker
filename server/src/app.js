@@ -30,12 +30,14 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/species', speciesRoutes);
 app.use('/api/fishponds', fishpondRoutes);
+// Mounted before the catch-all /api routers below, which require a login for
+// everything that passes through them; /api/settings/public must stay open.
+app.use('/api/settings', settingsRoutes);
 app.use('/api', monitoringRoutes); // /api/fishponds/:id/cycles, /api/cycles/:id, records, harvest
 app.use('/api', inventoryRoutes); // /api/fishponds/:id/inventory, /api/inventory/:id
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/reports', reportRoutes);
-app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use(notFound);

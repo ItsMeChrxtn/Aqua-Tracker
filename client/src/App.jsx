@@ -35,7 +35,6 @@ import MortalityOverview from './pages/agri/MortalityOverview';
 import GrowthOverview from './pages/agri/GrowthOverview';
 import HarvestOverview from './pages/agri/HarvestOverview';
 import AgriReports from './pages/agri/AgriReports';
-import MunicipalitySettings from './pages/agri/MunicipalitySettings';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagement from './pages/admin/UserManagement';
@@ -94,7 +93,6 @@ export default function App() {
               <Route path="monitoring/growth" element={<GrowthOverview />} />
               <Route path="monitoring/harvest" element={<HarvestOverview />} />
               <Route path="reports" element={<AgriReports />} />
-              <Route path="settings" element={<MunicipalitySettings />} />
             </Route>
           </Route>
 

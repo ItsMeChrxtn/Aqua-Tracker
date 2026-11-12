@@ -77,8 +77,9 @@ export function showInfo(title, html) {
   return base.fire({ icon: 'info', title, html });
 }
 
-// Promise-based replacement for window.confirm.
-export async function confirm(message, { title = 'Are you sure?', confirmLabel = 'Yes, delete it', danger = true } = {}) {
+// Promise-based replacement for window.confirm. Every confirmation answers
+// Yes (left) or No (right).
+export async function confirm(message, { title = 'Are you sure?', danger = true } = {}) {
   clearTimeout(fallbackTimer);
   loading = false;
   const result = await base.fire({
@@ -86,10 +87,10 @@ export async function confirm(message, { title = 'Are you sure?', confirmLabel =
     title,
     text: message,
     showCancelButton: true,
-    confirmButtonText: confirmLabel,
-    cancelButtonText: 'Cancel',
+    confirmButtonText: 'Yes',
+    cancelButtonText: 'No',
     confirmButtonColor: danger ? DANGER : BRAND,
-    reverseButtons: true,
+    reverseButtons: false,
     focusCancel: true,
   });
   return result.isConfirmed;

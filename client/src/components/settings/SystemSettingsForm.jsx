@@ -33,7 +33,10 @@ export default function SystemSettingsForm({ title }) {
 
   return (
     <div className="mx-auto max-w-xl space-y-5">
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+      <div>
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <p className="text-sm text-slate-600">These contact details appear on the AquaTrack homepage so fishpond operators know whom to contact.</p>
+      </div>
       <Card>
         <form onSubmit={submit} className="space-y-4">
           <Field label="Municipality Name">

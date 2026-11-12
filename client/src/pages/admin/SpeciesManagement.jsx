@@ -21,6 +21,9 @@ const EMPTY_FORM = {
   notes: '',
 };
 
+// Suggestions for the species name; any other name can still be typed.
+const SPECIES_SUGGESTIONS = ['Tilapia', 'Bangus (Milkfish)', 'Hito (Catfish)', 'Shrimp (Hipon)', 'Crab (Alimango)', 'Carp'];
+
 const WATER_TYPE_BADGE = {
   freshwater: 'bg-sky-50 text-sky-700 border-sky-300',
   saltwater: 'bg-cyan-50 text-cyan-700 border-cyan-300',
@@ -63,6 +66,10 @@ export default function SpeciesManagement() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (Number(form.recommendedHarvestWeightMin) > Number(form.recommendedHarvestWeightMax)) {
+      toast.error('The minimum harvest weight cannot be more than the maximum.');
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -88,7 +95,7 @@ export default function SpeciesManagement() {
   };
 
   const remove = async (s) => {
-    if (!(await confirm(`Delete species "${s.name}"? Existing production cycles referencing it will be unaffected.`))) return;
+    if (!(await confirm(`Delete species "${s.name}"? Existing production cycles referencing it will be unaffected.`, { title: 'Delete this species?' }))) return;
     try {
       await speciesApi.remove(s._id);
       toast.success('Species deleted');
@@ -103,7 +110,7 @@ export default function SpeciesManagement() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Species Management</h2>
-          <p className="text-sm text-slate-600">Defines each species&apos; water type and recommended harvest weight, used to drive harvest-readiness recommendations.</p>
+          <p className="text-sm text-slate-600">Defines each species&apos; type of water and recommended harvest weight, used to drive harvest-readiness recommendations.</p>
         </div>
         <Button icon="plus" onClick={openCreate}>Add Species</Button>
       </div>
@@ -116,7 +123,8 @@ export default function SpeciesManagement() {
               { key: 'name', header: 'Species' },
               {
                 key: 'waterType',
-                header: 'Water Type',
+                header: 'Type of Water',
+                value: (s) => WATER_TYPE_LABEL[s.waterType],
                 render: (s) => (
                   <Badge className={WATER_TYPE_BADGE[s.waterType]}>
                     <Icon name={s.waterType === 'freshwater' ? 'freshwater' : 'saltwater'} className="mr-1 h-3 w-3" />
@@ -127,10 +135,11 @@ export default function SpeciesManagement() {
               {
                 key: 'recommendedHarvestWeightMin',
                 header: 'Recommended Harvest Weight',
+                value: (s) => s.recommendedHarvestWeightMin,
                 render: (s) => `${s.recommendedHarvestWeightMin}–${s.recommendedHarvestWeightMax} g`,
               },
               { key: 'typicalGrowoutDays', header: 'Typical Grow-out', render: (s) => (s.typicalGrowoutDays ? `${s.typicalGrowoutDays} days` : '—') },
-              { key: 'isActive', header: 'Status', render: (s) => <Badge className={s.isActive ? 'bg-leaf-50 text-leaf-700 border-leaf-300' : 'bg-slate-50 text-slate-600 border-slate-300'}>{s.isActive ? 'Active' : 'Inactive'}</Badge> },
+              { key: 'isActive', header: 'Status', value: (s) => (s.isActive ? 'Active' : 'Inactive'), render: (s) => <Badge className={s.isActive ? 'bg-leaf-50 text-leaf-700 border-leaf-300' : 'bg-slate-50 text-slate-600 border-slate-300'}>{s.isActive ? 'Active' : 'Inactive'}</Badge> },
               {
                 key: 'actions',
                 header: '',
@@ -143,6 +152,7 @@ export default function SpeciesManagement() {
               },
             ]}
             rows={species}
+            searchable="Search species, type of water…"
             emptyMessage="No species defined yet. Add one so fishpond owners can start production cycles."
           />
         </div>
@@ -151,23 +161,47 @@ export default function SpeciesManagement() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? `Edit ${editing.name}` : 'Add Species'}>
         <form onSubmit={submit} className="space-y-4">
           <Field label="Species Name" required>
-            <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Tilapia" />
+            <Input required list="species-suggestions" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Tilapia" />
+            <datalist id="species-suggestions">
+              {SPECIES_SUGGESTIONS.filter((n) => !species.some((s) => s.name.toLowerCase() === n.toLowerCase())).map((n) => (
+                <option key={n} value={n} />
+              ))}
+            </datalist>
           </Field>
-          <Field label="Water Type" required hint="Whether this species is raised in freshwater, saltwater, or brackish ponds">
+          {!editing && (
+            <div className="-mt-2 flex flex-wrap gap-1.5">
+              {SPECIES_SUGGESTIONS.filter((n) => !species.some((s) => s.name.toLowerCase() === n.toLowerCase())).map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setForm({ ...form, name: n })}
+                  className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-600 hover:border-brand-400 hover:text-brand-700"
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
+          <Field label="Type of Water" required hint="Whether this species is raised in freshwater, saltwater, or brackish ponds">
             <Select value={form.waterType} onChange={(e) => setForm({ ...form, waterType: e.target.value })}>
               <option value="freshwater">Freshwater</option>
               <option value="saltwater">Saltwater</option>
               <option value="brackish">Brackish</option>
             </Select>
           </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Min Recommended Harvest Weight (g)" required>
-              <Input type="number" min="1" required value={form.recommendedHarvestWeightMin} onChange={(e) => setForm({ ...form, recommendedHarvestWeightMin: e.target.value })} />
-            </Field>
-            <Field label="Max Recommended Harvest Weight (g)" required>
-              <Input type="number" min="1" required value={form.recommendedHarvestWeightMax} onChange={(e) => setForm({ ...form, recommendedHarvestWeightMax: e.target.value })} />
-            </Field>
-          </div>
+          <fieldset>
+            <legend className="mb-1.5 text-[13px] font-semibold text-slate-700">
+              Recommended Harvest Weight (g) <span className="text-rose-500">*</span>
+            </legend>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Minimum">
+                <Input type="number" min="1" required placeholder="e.g. 250" value={form.recommendedHarvestWeightMin} onChange={(e) => setForm({ ...form, recommendedHarvestWeightMin: e.target.value })} />
+              </Field>
+              <Field label="Maximum">
+                <Input type="number" min="1" required placeholder="e.g. 350" value={form.recommendedHarvestWeightMax} onChange={(e) => setForm({ ...form, recommendedHarvestWeightMax: e.target.value })} />
+              </Field>
+            </div>
+          </fieldset>
           <Field label="Typical Grow-out Period (days)">
             <Input type="number" min="1" value={form.typicalGrowoutDays} onChange={(e) => setForm({ ...form, typicalGrowoutDays: e.target.value })} />
           </Field>

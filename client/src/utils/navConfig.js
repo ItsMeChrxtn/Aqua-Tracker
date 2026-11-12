@@ -53,10 +53,6 @@ export const NAV_CONFIG = {
       ],
     },
     { section: 'Reports', items: [{ label: 'Reports', to: '/agri/reports', icon: 'report' }] },
-    {
-      section: 'Settings',
-      items: [{ label: 'Municipality Settings', to: '/agri/settings', icon: 'settings' }],
-    },
   ],
   admin: [
     { section: null, items: [{ label: 'Dashboard', to: '/admin/dashboard', icon: 'dashboard' }] },

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import toast from '../../utils/notify';
+import toast, { confirm } from '../../utils/notify';
 import { adminApi, reportApi } from '../../api/misc';
 import { downloadFile } from '../../utils/download';
 import Card from '../../components/ui/Card';
@@ -9,10 +9,11 @@ import Icon from '../../components/ui/Icon';
 export default function DataExport() {
   const [busy, setBusy] = useState('');
 
-  const run = async (key, fn, filename) => {
+  const run = async (key, fn, question) => {
+    if (!(await confirm(question, { title: 'Download this file?', danger: false }))) return;
     setBusy(key);
     try {
-      await fn(filename);
+      await fn();
       toast.success('Download started');
     } catch (err) {
       if (!err?.handled) toast.error('Export failed');
@@ -39,7 +40,7 @@ export default function DataExport() {
               className="mt-3"
               icon="download"
               loading={busy === 'backup'}
-              onClick={() => run('backup', () => downloadFile(adminApi.backupUrl(), `aquatrack-backup-${Date.now()}.json`))}
+              onClick={() => run('backup', () => downloadFile(adminApi.backupUrl(), `aquatrack-backup-${Date.now()}.json`), 'This downloads a full JSON backup of all AquaTrack data.')}
             >
               Download Full Backup (JSON)
             </Button>
@@ -54,7 +55,7 @@ export default function DataExport() {
             variant="secondary"
             icon="download"
             loading={busy === 'excel'}
-            onClick={() => run('excel', () => downloadFile(reportApi.exportExcelUrl(), 'aquatrack-production-report.xlsx'))}
+            onClick={() => run('excel', () => downloadFile(reportApi.exportExcelUrl(), 'aquatrack-production-report.xlsx'), 'This downloads the production report as an Excel file.')}
           >
             Export Excel
           </Button>
@@ -62,7 +63,7 @@ export default function DataExport() {
             variant="secondary"
             icon="download"
             loading={busy === 'pdf'}
-            onClick={() => run('pdf', () => downloadFile(reportApi.exportPdfUrl(), 'aquatrack-production-report.pdf'))}
+            onClick={() => run('pdf', () => downloadFile(reportApi.exportPdfUrl(), 'aquatrack-production-report.pdf'), 'This downloads the production report as a PDF file.')}
           >
             Export PDF
           </Button>
