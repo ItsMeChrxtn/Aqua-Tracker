@@ -91,6 +91,7 @@ export default function RegisteredList() {
               { key: 'name', header: 'Fishpond' },
               { key: 'owner', header: 'Owner', render: (f) => f.owner?.name, value: (f) => f.owner?.name },
               { key: 'barangay', header: 'Barangay' },
+              { key: 'address', header: 'Address', render: (f) => f.address || '—' },
               { key: 'areaSize', header: 'Area', render: (f) => formatArea(f.areaSize) },
               { key: 'capacity', header: 'Capacity', render: (f) => formatCapacity(f.capacity) },
               { key: 'approvedAt', header: 'Approved On', render: (f) => formatDate(f.approvedAt) },

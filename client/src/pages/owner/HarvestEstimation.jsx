@@ -5,6 +5,7 @@ import { reportApi } from '../../api/misc';
 import { apiErrorMessage } from '../../api/client';
 import { useOwnerFishponds } from '../../hooks/useOwnerFishponds';
 import { downloadFile } from '../../utils/download';
+import ExportMenu from '../../components/ui/ExportMenu';
 import Card from '../../components/ui/Card';
 import StatCard from '../../components/ui/StatCard';
 import Badge from '../../components/ui/Badge';
@@ -72,9 +73,21 @@ export default function HarvestEstimation() {
       .finally(() => setLoading(false));
   }, [cycleId, cycles, fishpondId]);
 
-  const exportPdf = () => downloadFile(reportApi.exportPdfUrl(), 'aquatrack-harvest-report.pdf').catch((err) => {
+  const [exporting, setExporting] = useState(false);
+  // Only the fishpond picked above goes into the report.
+  const exportReport = async (type) => {
+    const pond = fishponds.find((f) => f._id === fishpondId);
+    const base = `aquatrack-harvest-${(pond?.name || 'report').replace(/[^\w-]+/g, '-').toLowerCase()}`;
+    setExporting(true);
+    try {
+      if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), `${base}.xlsx`, { fishpondId });
+      else await downloadFile(reportApi.exportPdfUrl(), `${base}.pdf`, { fishpondId });
+    } catch (err) {
       if (!err?.handled) toast.error('Export failed');
-    });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const submitHarvest = async (e) => {
     e.preventDefault();
@@ -118,7 +131,7 @@ export default function HarvestEstimation() {
               <option key={c._id} value={c._id}>{c.batchName || c._id.slice(-6)} — {c.species?.name}</option>
             ))}
           </Select>
-          <Button variant="secondary" size="sm" icon="download" onClick={exportPdf}>Export PDF</Button>
+          <ExportMenu onExport={exportReport} loading={exporting} subject={`the report for ${fishponds.find((f) => f._id === fishpondId)?.name || 'this fishpond'}`} />
         </div>
       </div>
 

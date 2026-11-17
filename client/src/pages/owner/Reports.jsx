@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import StatCard from '../../components/ui/StatCard';
 import Button from '../../components/ui/Button';
 import ExportMenu from '../../components/ui/ExportMenu';
+import { Select } from '../../components/ui/FormField';
 import CycleRecordsModal from '../../components/monitoring/CycleRecordsModal';
 import Badge from '../../components/ui/Badge';
 import DataTable from '../../components/ui/DataTable';
@@ -17,6 +18,7 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState('');
   const [query, setQuery] = useState('');
+  const [fishpondId, setFishpondId] = useState('');
   const [viewing, setViewing] = useState(null);
 
   useEffect(() => {
@@ -26,7 +28,7 @@ export default function Reports() {
   const exportAs = async (type) => {
     setExporting(type);
     try {
-      const params = query ? { q: query } : undefined;
+      const params = { ...(query ? { q: query } : {}), ...(fishpondId ? { fishpondId } : {}) };
       if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), 'aquatrack-production-report.xlsx', params);
       else await downloadFile(reportApi.exportPdfUrl(), 'aquatrack-production-report.pdf', params);
       toast.success('Report downloaded');
@@ -40,11 +42,23 @@ export default function Reports() {
   if (loading) return <Spinner />;
   if (!data) return null;
 
+  const ponds = [...new Map(data.productionSummary.map((r) => [String(r.fishpondId), r.fishpondName])).entries()];
+  const rows = fishpondId ? data.productionSummary.filter((r) => String(r.fishpondId) === fishpondId) : data.productionSummary;
+  const pondName = ponds.find(([pid]) => pid === fishpondId)?.[1];
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-slate-900">Reports</h2>
-        <ExportMenu onExport={exportAs} loading={!!exporting} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={fishpondId} onChange={(e) => setFishpondId(e.target.value)} className="w-52" aria-label="Fishpond">
+            <option value="">All fishponds</option>
+            {ponds.map(([pid, name]) => (
+              <option key={pid} value={pid}>{name}</option>
+            ))}
+          </Select>
+          <ExportMenu onExport={exportAs} loading={!!exporting} subject={pondName ? `the report for ${pondName}` : 'the report for all fishponds'} />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -53,7 +67,7 @@ export default function Reports() {
         <StatCard label="Revenue This Month" value={`₱${formatNumber(data.summary.salesRevenueThisMonth, 2)}`} icon="report" tone="sky" />
       </div>
 
-      <Card title="Production Summary — All Fishponds" padded={false}>
+      <Card title={`Production Summary — ${pondName || 'All Fishponds'}`} padded={false}>
         <div className="p-2">
           <DataTable
             columns={[
@@ -74,7 +88,7 @@ export default function Reports() {
                 ),
               },
             ]}
-            rows={data.productionSummary}
+            rows={rows}
             keyField="cycleId"
             searchable="Search fishpond, species, status…"
             query={query}

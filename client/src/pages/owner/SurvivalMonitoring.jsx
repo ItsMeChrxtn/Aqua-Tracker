@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { cycleApi, harvestApi, mortalityApi } from '../../api/fishponds';
+import { cycleApi, harvestApi, mortalityApi, growthApi } from '../../api/fishponds';
 import { useOwnerFishponds } from '../../hooks/useOwnerFishponds';
 import { useSpeciesList } from '../../hooks/useSpeciesList';
 import Card from '../../components/ui/Card';
@@ -7,6 +7,9 @@ import StatCard from '../../components/ui/StatCard';
 import EmptyState from '../../components/ui/EmptyState';
 import Spinner from '../../components/ui/Spinner';
 import { Select } from '../../components/ui/FormField';
+import Button from '../../components/ui/Button';
+import RecordFormModal from '../../components/monitoring/RecordFormModal';
+import { MORTALITY_FIELDS, GROWTH_FIELDS } from '../../components/monitoring/recordFields';
 import LineTrendChart from '../../components/charts/LineTrendChart';
 import SpeciesFilterSelect from '../../components/charts/SpeciesFilterSelect';
 import { formatDate, formatNumber } from '../../utils/format';
@@ -21,6 +24,9 @@ export default function SurvivalMonitoring() {
   const [mortality, setMortality] = useState([]);
   const [activeStats, setActiveStats] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [activeCycles, setActiveCycles] = useState([]);
+  const [adding, setAdding] = useState(null); // 'mortality' | 'growth'
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!fishpondId && fishponds.length > 0) setFishpondId(fishponds[0]._id);
@@ -39,6 +45,7 @@ export default function SurvivalMonitoring() {
       .then(async ([historyLogs, mortalityRes, activeCycles]) => {
         setLogs([...historyLogs].reverse());
         setMortality(mortalityRes.records);
+        setActiveCycles(activeCycles);
 
         if (activeCycles.length > 0) {
           const estimates = await Promise.all(activeCycles.map((c) => harvestApi.getEstimate(c._id)));
@@ -63,7 +70,7 @@ export default function SurvivalMonitoring() {
         }
       })
       .finally(() => setLoading(false));
-  }, [fishpondId, speciesFilter]);
+  }, [fishpondId, speciesFilter, reloadKey]);
 
   if (loadingFishponds) return null;
   if (fishponds.length === 0) {
@@ -87,6 +94,8 @@ export default function SurvivalMonitoring() {
             ))}
           </Select>
           <SpeciesFilterSelect species={species} value={speciesFilter} onChange={setSpeciesFilter} />
+          <Button icon="plus" variant="secondary" onClick={() => setAdding('mortality')}>Add Mortality</Button>
+          <Button icon="plus" onClick={() => setAdding('growth')}>Add Growth Record</Button>
         </div>
       </div>
 
@@ -116,6 +125,27 @@ export default function SurvivalMonitoring() {
           </Card>
         </>
       )}
+
+      <RecordFormModal
+        open={adding === 'mortality'}
+        onClose={() => setAdding(null)}
+        title="Add Mortality Record"
+        api={mortalityApi}
+        fields={MORTALITY_FIELDS}
+        fishpondId={fishpondId}
+        activeCycles={activeCycles}
+        onSaved={() => setReloadKey((k) => k + 1)}
+      />
+      <RecordFormModal
+        open={adding === 'growth'}
+        onClose={() => setAdding(null)}
+        title="Add Growth Record"
+        api={growthApi}
+        fields={GROWTH_FIELDS}
+        fishpondId={fishpondId}
+        activeCycles={activeCycles}
+        onSaved={() => setReloadKey((k) => k + 1)}
+      />
     </div>
   );
 }

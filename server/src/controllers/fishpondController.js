@@ -11,6 +11,9 @@ const MAX_CAPACITY = 100000000;
 
 const isSet = (value) => value !== undefined && value !== '';
 
+// The barangays where fishponds can be registered.
+const FISHPOND_BARANGAYS = ['San Juan II', 'San Rafael III', 'San Rafael IV'];
+
 // Checked here rather than as schema `max` validators: Mongoose re-validates
 // loaded fields on save, so a schema limit would block approving or editing
 // any fishpond already saved with an out-of-range value.
@@ -65,14 +68,18 @@ const getFishpond = asyncHandler(async (req, res) => {
 });
 
 const registerFishpond = asyncHandler(async (req, res) => {
-  const { name, barangay, areaSize, capacity } = req.body;
-  if (!name || !barangay) throw new ApiError(400, 'Fishpond name and barangay are required');
+  const { name, barangay, address, areaSize, capacity } = req.body;
+  if (!name || !barangay || !String(address || '').trim()) throw new ApiError(400, 'Fishpond name, barangay, and address are required');
+  if (!FISHPOND_BARANGAYS.includes(barangay)) {
+    throw new ApiError(400, `Fishponds can only be registered in ${FISHPOND_BARANGAYS.join(', ')}.`);
+  }
   assertValidSize({ areaSize, capacity });
 
   const fishpond = await Fishpond.create({
     owner: req.user._id,
     name,
     barangay,
+    address,
     areaSize,
     capacity,
     imageUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
@@ -92,10 +99,11 @@ const updateFishpond = asyncHandler(async (req, res) => {
   const isStaff = ['agriculture_staff', 'admin'].includes(req.user.role);
   if (!isOwner && !isStaff) throw new ApiError(403, 'You do not have access to this fishpond');
 
-  const { name, barangay, areaSize, capacity } = req.body;
+  const { name, barangay, address, areaSize, capacity } = req.body;
   assertValidSize({ areaSize, capacity });
   if (name !== undefined) fishpond.name = name;
   if (barangay !== undefined) fishpond.barangay = barangay;
+  if (address !== undefined) fishpond.address = address;
   if (areaSize !== undefined) fishpond.areaSize = areaSize;
   if (capacity !== undefined) fishpond.capacity = capacity;
   if (req.file) fishpond.imageUrl = `/uploads/${req.file.filename}`;

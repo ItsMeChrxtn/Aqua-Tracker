@@ -14,6 +14,7 @@ router.use(protect);
 // Production cycles (batches)
 router.get('/fishponds/:fishpondId/cycles', cycleController.listCycles);
 router.post('/fishponds/:fishpondId/cycles', cycleController.createCycle);
+router.get('/fishponds/:fishpondId/capacity', cycleController.getCapacity);
 router.get('/cycles/:id', cycleController.getCycle);
 router.put('/cycles/:id', cycleController.updateCycle);
 

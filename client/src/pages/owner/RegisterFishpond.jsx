@@ -8,11 +8,12 @@ import Button from '../../components/ui/Button';
 import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
 import Icon from '../../components/ui/Icon';
 import { hectaresToSquareMeters } from '../../utils/format';
+import { FISHPOND_BARANGAYS } from '../../utils/barangays';
 import { MAX_AREA_HECTARES, MIN_AREA_HECTARES, MAX_CAPACITY } from '../../utils/limits';
 
 export default function RegisterFishpond() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', barangay: '', areaHectares: '', capacity: '' });
+  const [form, setForm] = useState({ name: '', barangay: '', address: '', areaHectares: '', capacity: '' });
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -30,6 +31,7 @@ export default function RegisterFishpond() {
       const formData = new FormData();
       formData.append('name', form.name);
       formData.append('barangay', form.barangay);
+      formData.append('address', form.address);
       if (form.areaHectares) formData.append('areaSize', hectaresToSquareMeters(form.areaHectares));
       if (form.capacity) formData.append('capacity', form.capacity);
       if (image) formData.append('image', image);
@@ -53,7 +55,10 @@ export default function RegisterFishpond() {
             <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. JDC Tilapia Farm" />
           </Field>
           <Field label="Barangay" required>
-            <BarangaySelect required value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
+            <BarangaySelect required options={FISHPOND_BARANGAYS} value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
+          </Field>
+          <Field label="Address" required hint="Street, sitio, or landmark of the fishpond">
+            <Input required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="e.g. Purok 3, near the barangay hall" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Area Size (hectares)" hint={`Up to ${MAX_AREA_HECTARES} hectares`}>

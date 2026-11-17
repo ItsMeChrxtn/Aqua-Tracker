@@ -85,14 +85,14 @@ export function SelectWithOther({ options, value, onChange, required, placeholde
 
 // Dropdown of Noveleta barangays. A saved value outside the official list
 // (older free-text data) is kept as an extra option so editing doesn't drop it.
-export function BarangaySelect({ value, placeholder = 'Select barangay', ...props }) {
-  const legacy = value && !NOVELETA_BARANGAYS.includes(value);
+export function BarangaySelect({ value, placeholder = 'Select barangay', options = NOVELETA_BARANGAYS, ...props }) {
+  const legacy = value && !options.includes(value);
   return (
     <Select value={value || ''} {...props}>
       <option value="" disabled={props.required}>
         {placeholder}
       </option>
-      {NOVELETA_BARANGAYS.map((b) => (
+      {options.map((b) => (
         <option key={b} value={b}>{b}</option>
       ))}
       {legacy && <option value={value}>{value}</option>}

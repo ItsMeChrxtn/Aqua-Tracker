@@ -5,6 +5,7 @@ const fishpondSchema = new mongoose.Schema(
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true, trim: true },
     barangay: { type: String, required: true, trim: true },
+    address: { type: String, trim: true }, // street / sitio within the barangay
     areaSize: { type: Number, min: 0 }, // stored in square meters; shown in hectares
     capacity: { type: Number, min: 0 }, // maximum number of fish the pond can hold
     imageUrl: { type: String },

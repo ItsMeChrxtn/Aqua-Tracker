@@ -1,6 +1,7 @@
 const StockingRecord = require('../models/StockingRecord');
 const { createRecordHandlers } = require('../utils/recordFactory');
 const { ApiError } = require('../middleware/errorHandler');
+const { assertWithinCapacity } = require('../utils/capacity');
 
 const pickFields = (body) => {
   const { date, quantity, source, notes } = body;
@@ -8,4 +9,10 @@ const pickFields = (body) => {
   return { date, quantity, source, notes };
 };
 
-module.exports = createRecordHandlers(StockingRecord, { targetType: 'StockingRecord', pickFields });
+// Added fingerlings count toward the fishpond's capacity.
+const prepare = async ({ data, cycle }) => {
+  await assertWithinCapacity(cycle.fishpond, data.quantity);
+  return data;
+};
+
+module.exports = createRecordHandlers(StockingRecord, { targetType: 'StockingRecord', pickFields, prepare });

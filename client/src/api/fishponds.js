@@ -20,6 +20,7 @@ export const cycleApi = {
   listForFishpond: (fishpondId, params) =>
     client.get(`/fishponds/${fishpondId}/cycles`, { params }).then((r) => r.data.cycles),
   create: (fishpondId, data) => client.post(`/fishponds/${fishpondId}/cycles`, data).then((r) => r.data.cycle),
+  capacity: (fishpondId) => client.get(`/fishponds/${fishpondId}/capacity`).then((r) => r.data),
   get: (id) => client.get(`/cycles/${id}`).then((r) => r.data),
   update: (id, data) => client.put(`/cycles/${id}`, data).then((r) => r.data.cycle),
 };

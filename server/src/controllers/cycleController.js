@@ -5,6 +5,9 @@ const { ApiError } = require('../middleware/errorHandler');
 const { loadFishpondWithAccess, loadCycleWithAccess } = require('../utils/access');
 const { logActivity } = require('../utils/activityLog');
 const { computeHarvestEstimate } = require('../utils/calculations');
+const { assertWithinCapacity, getPondFishCount } = require('../utils/capacity');
+
+const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // GET /api/fishponds/:fishpondId/cycles?status=&speciesId=
 const listCycles = asyncHandler(async (req, res) => {
@@ -31,10 +34,17 @@ const createCycle = asyncHandler(async (req, res) => {
   const species = await Species.findById(speciesId);
   if (!species) throw new ApiError(404, 'Species not found');
 
+  const name = String(batchName || '').trim();
+  if (name) {
+    const duplicate = await ProductionCycle.exists({ fishpond: fishpond._id, batchName: new RegExp(`^${escapeRegex(name)}$`, 'i') });
+    if (duplicate) throw new ApiError(400, `${fishpond.name} already has a batch named "${name}". Use a different batch name.`);
+  }
+  await assertWithinCapacity(fishpond, initialCount);
+
   const cycle = await ProductionCycle.create({
     fishpond: fishpond._id,
     species: species._id,
-    batchName,
+    batchName: name || undefined,
     stockingDate,
     initialCount,
     notes,
@@ -65,4 +75,16 @@ const updateCycle = asyncHandler(async (req, res) => {
   res.json({ success: true, cycle });
 });
 
-module.exports = { listCycles, createCycle, getCycle, updateCycle };
+// GET /api/fishponds/:fishpondId/capacity — how many more fish fit
+const getCapacity = asyncHandler(async (req, res) => {
+  const fishpond = await loadFishpondWithAccess(req.user, req.params.fishpondId);
+  const current = await getPondFishCount(fishpond._id);
+  res.json({
+    success: true,
+    capacity: fishpond.capacity || null,
+    current,
+    available: fishpond.capacity ? Math.max(fishpond.capacity - current, 0) : null,
+  });
+});
+
+module.exports = { listCycles, createCycle, getCycle, updateCycle, getCapacity };

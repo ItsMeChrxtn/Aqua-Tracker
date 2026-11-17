@@ -12,7 +12,16 @@ import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
 import { Field, Input, Select } from '../../components/ui/FormField';
-import { formatArea, formatCapacity, formatDate, STATUS_BADGE_CLASS, WATER_TYPE_LABEL } from '../../utils/format';
+import { formatArea, formatCapacity, formatDate, formatNumber, STATUS_BADGE_CLASS, WATER_TYPE_LABEL } from '../../utils/format';
+
+const sameName = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
+
+// Suggests the next unused "Batch N" for this fishpond.
+function nextBatchName(cycles) {
+  let n = cycles.length + 1;
+  while (cycles.some((c) => sameName(c.batchName, `Batch ${n}`) || sameName(c.batchName, String(n)))) n += 1;
+  return `Batch ${n}`;
+}
 
 export default function FishpondDetail() {
   const { id } = useParams();
@@ -23,6 +32,7 @@ export default function FishpondDetail() {
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ speciesId: '', batchName: '', stockingDate: '', initialCount: '' });
+  const [room, setRoom] = useState(null); // { capacity, current, available }
 
   const load = () => {
     setLoading(true);
@@ -36,8 +46,25 @@ export default function FishpondDetail() {
 
   useEffect(load, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const openCycleModal = () => {
+    setForm({ speciesId: '', batchName: nextBatchName(cycles), stockingDate: new Date().toISOString().slice(0, 10), initialCount: '' });
+    setRoom(null);
+    cycleApi.capacity(id).then(setRoom);
+    setModalOpen(true);
+  };
+
+  const duplicateBatch = form.batchName.trim() && cycles.some((c) => sameName(c.batchName, form.batchName));
+
   const submit = async (e) => {
     e.preventDefault();
+    if (duplicateBatch) {
+      toast.error(`"${form.batchName.trim()}" already exists in this fishpond. Use a different batch name.`);
+      return;
+    }
+    if (room?.capacity && Number(form.initialCount) > room.available) {
+      toast.error(`This fishpond can only take ${formatNumber(room.available)} more fish (capacity ${formatNumber(room.capacity)}).`);
+      return;
+    }
     setSaving(true);
     try {
       await cycleApi.create(id, { ...form, initialCount: Number(form.initialCount) });
@@ -61,7 +88,7 @@ export default function FishpondDetail() {
         <div>
           <h2 className="text-lg font-semibold text-slate-900">{fishpond.name}</h2>
           <p className="flex items-center gap-1 text-sm text-slate-600">
-            <Icon name="location" className="h-4 w-4" /> {fishpond.barangay} · {formatArea(fishpond.areaSize, 'Area not set')} · {formatCapacity(fishpond.capacity, 'Capacity not set')}
+            <Icon name="location" className="h-4 w-4" /> {fishpond.address ? `${fishpond.address}, ` : ''}{fishpond.barangay} · {formatArea(fishpond.areaSize, 'Area not set')} · {formatCapacity(fishpond.capacity, 'Capacity not set')}
           </p>
         </div>
         <Badge className={STATUS_BADGE_CLASS[fishpond.status]}>{fishpond.status}</Badge>
@@ -81,7 +108,7 @@ export default function FishpondDetail() {
         <Card
           title="Production Cycles (Batches)"
           action={
-            <Button size="sm" icon="plus" onClick={() => setModalOpen(true)}>
+            <Button size="sm" icon="plus" onClick={openCycleModal}>
               Start New Cycle
             </Button>
           }
@@ -122,20 +149,41 @@ export default function FishpondDetail() {
               ))}
             </Select>
           </Field>
-          <Field label="Batch Name" hint='e.g. "Batch 1"'>
-            <Input value={form.batchName} onChange={(e) => setForm({ ...form, batchName: e.target.value })} />
+          <Field
+            label="Batch Name"
+            required
+            error={duplicateBatch ? 'This batch name is already used in this fishpond.' : undefined}
+            hint="Each batch in a fishpond needs its own name"
+          >
+            <Input required value={form.batchName} onChange={(e) => setForm({ ...form, batchName: e.target.value })} />
           </Field>
           <Field label="Stocking Date" required>
             <Input type="date" required value={form.stockingDate} onChange={(e) => setForm({ ...form, stockingDate: e.target.value })} />
           </Field>
-          <Field label="Initial Count (fingerlings)" required>
-            <Input type="number" min="1" required value={form.initialCount} onChange={(e) => setForm({ ...form, initialCount: e.target.value })} />
+          <Field
+            label="Initial Count (fingerlings)"
+            required
+            hint={
+              room?.capacity
+                ? `Up to ${formatNumber(room.available)} more fish — capacity ${formatNumber(room.capacity)}, ${formatNumber(room.current)} already in the pond`
+                : undefined
+            }
+          >
+            <Input
+              type="number"
+              min="1"
+              max={room?.capacity ? room.available : undefined}
+              step="1"
+              required
+              value={form.initialCount}
+              onChange={(e) => setForm({ ...form, initialCount: e.target.value })}
+            />
           </Field>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" loading={saving}>
+            <Button type="submit" loading={saving} disabled={Boolean(duplicateBatch) || room?.available === 0}>
               Start Cycle
             </Button>
           </div>

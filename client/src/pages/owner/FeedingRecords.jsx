@@ -1,7 +1,6 @@
 import MonitoringRecordPage from '../../components/monitoring/MonitoringRecordPage';
 import { feedingApi } from '../../api/fishponds';
 import { inventoryApi } from '../../api/inventory';
-import { formatNumber } from '../../utils/format';
 
 // Kept in sync with ORGANIC_FEED in server/src/controllers/feedingController.js.
 const ORGANIC_FEED = 'Organic feeds (lumot)';
@@ -13,7 +12,7 @@ async function loadFeedOptions(fishpondId) {
   return [
     ...items
       .filter((i) => i.category === 'feed')
-      .map((i) => ({ value: i._id, label: `${i.name} — ${formatNumber(i.currentStock, 1)} ${i.unit} in stock` })),
+      .map((i) => (i.currentStock > 0 ? { value: i._id, label: i.name } : { value: i._id, label: `${i.name} (Out of stock)`, disabled: true })),
     { value: ORGANIC_FEED, label: ORGANIC_FEED },
   ];
 }

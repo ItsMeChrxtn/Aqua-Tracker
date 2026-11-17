@@ -53,7 +53,7 @@ export default function FishpondList() {
                   <div>
                     <p className="font-semibold text-slate-900 group-hover:text-brand-600">{f.name}</p>
                     <p className="mt-0.5 flex items-center gap-1 text-xs text-slate-400">
-                      <Icon name="location" className="h-3.5 w-3.5" /> {f.barangay}
+                      <Icon name="location" className="h-3.5 w-3.5" /> {f.address ? `${f.address}, ` : ''}{f.barangay}
                     </p>
                   </div>
                   <Badge className={STATUS_BADGE_CLASS[f.status]}>{f.status}</Badge>

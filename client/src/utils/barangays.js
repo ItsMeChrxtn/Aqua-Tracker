@@ -18,6 +18,9 @@ export const NOVELETA_BARANGAYS = [
   'Santa Rosa II',
 ];
 
+// The barangays where fishponds can be registered (matches the server).
+export const FISHPOND_BARANGAYS = ['San Juan II', 'San Rafael III', 'San Rafael IV'];
+
 // Official list first, then any other values already stored in the data
 // (older free-text entries), so filters still reach every record.
 export function withExistingBarangays(values) {
