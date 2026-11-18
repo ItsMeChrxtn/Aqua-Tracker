@@ -14,8 +14,6 @@ export const NAV_CONFIG = {
       items: [
         { label: 'Stocking Records', to: '/owner/monitoring/stocking', icon: 'fish' },
         { label: 'Feeding Records', to: '/owner/monitoring/feeding', icon: 'clipboard' },
-        { label: 'Mortality Records', to: '/owner/monitoring/mortality', icon: 'mortality' },
-        { label: 'Growth Monitoring', to: '/owner/monitoring/growth', icon: 'growth' },
         { label: 'Survival Monitoring', to: '/owner/monitoring/survival', icon: 'survival' },
       ],
     },

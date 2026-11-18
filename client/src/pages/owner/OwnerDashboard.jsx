@@ -21,8 +21,8 @@ const STATUS_RING = {
 };
 
 const QUICK_ACTIONS = [
-  { to: '/owner/monitoring/mortality', icon: 'mortality', label: 'Add Mortality Record', tone: 'rose' },
-  { to: '/owner/monitoring/growth', icon: 'growth', label: 'Update Sample Weight', tone: 'leaf' },
+  { to: '/owner/monitoring/survival?add=mortality', icon: 'mortality', label: 'Add Mortality Record', tone: 'rose' },
+  { to: '/owner/monitoring/survival?add=growth', icon: 'growth', label: 'Update Sample Weight', tone: 'leaf' },
   { to: '/owner/harvest-estimation', icon: 'harvest', label: 'View Harvest Estimate', tone: 'clay' },
   { to: '/owner/monitoring/sales', icon: 'report', label: 'Record Sale', tone: 'brand' },
   { to: '/owner/inventory', icon: 'clipboard', label: 'Check Inventory', tone: 'clay' },

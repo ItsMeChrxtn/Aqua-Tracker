@@ -17,8 +17,6 @@ import RegisterFishpond from './pages/owner/RegisterFishpond';
 import FishpondDetail from './pages/owner/FishpondDetail';
 import StockingRecords from './pages/owner/StockingRecords';
 import FeedingRecords from './pages/owner/FeedingRecords';
-import MortalityRecords from './pages/owner/MortalityRecords';
-import GrowthMonitoring from './pages/owner/GrowthMonitoring';
 import SurvivalMonitoring from './pages/owner/SurvivalMonitoring';
 import HarvestEstimation from './pages/owner/HarvestEstimation';
 import SalesRecords from './pages/owner/SalesRecords';
@@ -72,8 +70,8 @@ export default function App() {
               <Route path="inventory" element={<InventoryManagement />} />
               <Route path="monitoring/stocking" element={<StockingRecords />} />
               <Route path="monitoring/feeding" element={<FeedingRecords />} />
-              <Route path="monitoring/mortality" element={<MortalityRecords />} />
-              <Route path="monitoring/growth" element={<GrowthMonitoring />} />
+              <Route path="monitoring/mortality" element={<Navigate to="/owner/monitoring/survival?add=mortality" replace />} />
+              <Route path="monitoring/growth" element={<Navigate to="/owner/monitoring/survival?add=growth" replace />} />
               <Route path="monitoring/survival" element={<SurvivalMonitoring />} />
               <Route path="monitoring/sales" element={<SalesRecords />} />
               <Route path="harvest-estimation" element={<HarvestEstimation />} />

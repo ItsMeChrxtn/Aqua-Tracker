@@ -4,6 +4,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { ApiError } = require('../middleware/errorHandler');
 const { logActivity } = require('../utils/activityLog');
 const { createNotification } = require('../utils/notify');
+const { getPondFishCount } = require('../utils/capacity');
 
 const MAX_AREA_HECTARES = 100;
 const SQUARE_METERS_PER_HECTARE = 10000;
@@ -101,11 +102,23 @@ const updateFishpond = asyncHandler(async (req, res) => {
 
   const { name, barangay, address, areaSize, capacity } = req.body;
   assertValidSize({ areaSize, capacity });
-  if (name !== undefined) fishpond.name = name;
+  if (name !== undefined && !String(name).trim()) throw new ApiError(400, 'Fishpond name is required');
+  if (address !== undefined && !String(address).trim()) throw new ApiError(400, 'Address is required');
+  // An older fishpond may keep its barangay, but a new choice must be an allowed one.
+  if (barangay !== undefined && barangay !== fishpond.barangay && !FISHPOND_BARANGAYS.includes(barangay)) {
+    throw new ApiError(400, `Barangay must be one of: ${FISHPOND_BARANGAYS.join(', ')}`);
+  }
+  if (isSet(capacity)) {
+    const inPond = await getPondFishCount(fishpond._id);
+    if (Number(capacity) < inPond) {
+      throw new ApiError(400, `Capacity cannot be lower than the ${inPond.toLocaleString('en-PH')} fish already in the pond`);
+    }
+  }
+  if (name !== undefined) fishpond.name = String(name).trim();
   if (barangay !== undefined) fishpond.barangay = barangay;
-  if (address !== undefined) fishpond.address = address;
-  if (areaSize !== undefined) fishpond.areaSize = areaSize;
-  if (capacity !== undefined) fishpond.capacity = capacity;
+  if (address !== undefined) fishpond.address = String(address).trim();
+  if (isSet(areaSize)) fishpond.areaSize = areaSize;
+  if (isSet(capacity)) fishpond.capacity = capacity;
   if (req.file) fishpond.imageUrl = `/uploads/${req.file.filename}`;
 
   await fishpond.save();

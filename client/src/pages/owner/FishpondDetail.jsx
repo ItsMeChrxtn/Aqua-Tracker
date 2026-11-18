@@ -11,7 +11,10 @@ import Modal from '../../components/ui/Modal';
 import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
-import { Field, Input, Select } from '../../components/ui/FormField';
+import { Field, Input, Select, BarangaySelect } from '../../components/ui/FormField';
+import { FISHPOND_BARANGAYS } from '../../utils/barangays';
+import { MAX_AREA_HECTARES, MIN_AREA_HECTARES, MAX_CAPACITY } from '../../utils/limits';
+import { hectaresToSquareMeters } from '../../utils/format';
 import { formatArea, formatCapacity, formatDate, formatNumber, STATUS_BADGE_CLASS, WATER_TYPE_LABEL } from '../../utils/format';
 
 const sameName = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
@@ -33,6 +36,9 @@ export default function FishpondDetail() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ speciesId: '', batchName: '', stockingDate: '', initialCount: '' });
   const [room, setRoom] = useState(null); // { capacity, current, available }
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -79,6 +85,41 @@ export default function FishpondDetail() {
     }
   };
 
+  const openEdit = () => {
+    setEditForm({
+      name: fishpond.name || '',
+      barangay: fishpond.barangay || '',
+      address: fishpond.address || '',
+      // Hide area values that are clearly broken so the owner re-enters them.
+      areaHectares: fishpond.areaSize && fishpond.areaSize <= MAX_AREA_HECTARES * 10000 ? String(fishpond.areaSize / 10000) : '',
+      capacity: fishpond.capacity ? String(fishpond.capacity) : '',
+      image: null,
+    });
+    setEditOpen(true);
+  };
+
+  const submitEdit = async (e) => {
+    e.preventDefault();
+    setSavingEdit(true);
+    try {
+      const formData = new FormData();
+      formData.append('name', editForm.name);
+      formData.append('barangay', editForm.barangay);
+      formData.append('address', editForm.address);
+      if (editForm.areaHectares) formData.append('areaSize', hectaresToSquareMeters(editForm.areaHectares));
+      if (editForm.capacity) formData.append('capacity', editForm.capacity);
+      if (editForm.image) formData.append('image', editForm.image);
+      await fishpondApi.update(id, formData);
+      toast.success('Fishpond details updated');
+      setEditOpen(false);
+      load();
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Failed to update fishpond'));
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   if (loading) return <Spinner />;
   if (!fishpond) return null;
 
@@ -91,7 +132,12 @@ export default function FishpondDetail() {
             <Icon name="location" className="h-4 w-4" /> {fishpond.address ? `${fishpond.address}, ` : ''}{fishpond.barangay} · {formatArea(fishpond.areaSize, 'Area not set')} · {formatCapacity(fishpond.capacity, 'Capacity not set')}
           </p>
         </div>
-        <Badge className={STATUS_BADGE_CLASS[fishpond.status]}>{fishpond.status}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge className={STATUS_BADGE_CLASS[fishpond.status]}>{fishpond.status}</Badge>
+          <Button size="sm" variant="secondary" icon="edit" onClick={openEdit}>
+            Edit Fishpond
+          </Button>
+        </div>
       </div>
 
       {fishpond.status !== 'approved' && (
@@ -188,6 +234,40 @@ export default function FishpondDetail() {
             </Button>
           </div>
         </form>
+      </Modal>
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Fishpond">
+        {editForm && (
+          <form onSubmit={submitEdit} className="space-y-4">
+            <Field label="Fishpond Name" required>
+              <Input required value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+            </Field>
+            <Field label="Barangay" required>
+              <BarangaySelect required options={FISHPOND_BARANGAYS} value={editForm.barangay} onChange={(e) => setEditForm({ ...editForm, barangay: e.target.value })} />
+            </Field>
+            <Field label="Address" required hint="Street, sitio, or landmark of the fishpond">
+              <Input required value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} placeholder="e.g. Purok 3, near the barangay hall" />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Area Size (hectares)" hint={`Up to ${MAX_AREA_HECTARES} hectares`}>
+                <Input type="number" min={MIN_AREA_HECTARES} max={MAX_AREA_HECTARES} step="any" value={editForm.areaHectares} onChange={(e) => setEditForm({ ...editForm, areaHectares: e.target.value })} />
+              </Field>
+              <Field label="Capacity (no. of fish)" hint="Most fish this pond can hold">
+                <Input type="number" min="1" max={MAX_CAPACITY} step="1" value={editForm.capacity} onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })} />
+              </Field>
+            </div>
+            <Field label="Replace Photo" hint="Optional">
+              <Input type="file" accept="image/*" onChange={(e) => setEditForm({ ...editForm, image: e.target.files[0] || null })} />
+            </Field>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={savingEdit}>
+                Save Changes
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );
