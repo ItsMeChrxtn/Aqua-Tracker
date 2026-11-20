@@ -35,7 +35,7 @@ export default function HarvestEstimation() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [harvestModalOpen, setHarvestModalOpen] = useState(false);
-  const [harvestForm, setHarvestForm] = useState({ date: new Date().toISOString().slice(0, 10), actualQuantity: '', actualWeightKg: '', notes: '' });
+  const [harvestForm, setHarvestForm] = useState({ date: new Date().toISOString().slice(0, 10), actualQuantity: '', notes: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -93,10 +93,10 @@ export default function HarvestEstimation() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await harvestApi.logHarvest(cycleId, { ...harvestForm, actualQuantity: Number(harvestForm.actualQuantity), actualWeightKg: Number(harvestForm.actualWeightKg) });
+      const res = await harvestApi.logHarvest(cycleId, { ...harvestForm, actualQuantity: Number(harvestForm.actualQuantity) });
       toast.success(res.closed ? 'All remaining fish harvested — this batch is now closed.' : `Harvest logged. ${formatNumber(res.remaining)} fish remain in this batch.`);
       setHarvestModalOpen(false);
-      setHarvestForm({ date: new Date().toISOString().slice(0, 10), actualQuantity: '', actualWeightKg: '', notes: '' });
+      setHarvestForm({ date: new Date().toISOString().slice(0, 10), actualQuantity: '', notes: '' });
       const list = await cycleApi.listForFishpond(fishpondId, { status: 'active' });
       setCycles(list);
       setCycleId(list.some((c) => c._id === cycleId) ? cycleId : list[0]?._id || '');
@@ -240,7 +240,6 @@ export default function HarvestEstimation() {
                 setHarvestForm({
                   ...harvestForm,
                   actualQuantity: String(estimate?.currentCount || ''),
-                  actualWeightKg: harvestForm.actualWeightKg || String(estimate?.estimatedHarvestKg || ''),
                 })
               }
             >
@@ -249,9 +248,6 @@ export default function HarvestEstimation() {
           </div>
           <Field label="Actual Quantity Harvested" required hint="Only this many fish are removed from the batch.">
             <Input type="number" min="1" max={estimate?.currentCount} step="1" required value={harvestForm.actualQuantity} onChange={(e) => setHarvestForm({ ...harvestForm, actualQuantity: e.target.value })} />
-          </Field>
-          <Field label="Actual Total Weight (kg)" required>
-            <Input type="number" step="any" min="0" required value={harvestForm.actualWeightKg} onChange={(e) => setHarvestForm({ ...harvestForm, actualWeightKg: e.target.value })} />
           </Field>
           <Field label="Notes">
             <Textarea value={harvestForm.notes} onChange={(e) => setHarvestForm({ ...harvestForm, notes: e.target.value })} />

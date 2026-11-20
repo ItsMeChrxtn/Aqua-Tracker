@@ -19,8 +19,25 @@ export default function RegisterPage() {
 
   const update = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
+  const validateForm = () => {
+    if (/\d/.test(form.firstName)) {
+      toast.error('First name must not contain numbers');
+      return false;
+    }
+    if (/\d/.test(form.lastName)) {
+      toast.error('Surname must not contain numbers');
+      return false;
+    }
+    if (form.phone && /[a-zA-Z]/.test(form.phone)) {
+      toast.error('Phone number must not contain letters');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) return;
     if (form.password !== form.confirmPassword) {
       toast.error('Passwords do not match');
       return;
@@ -73,7 +90,7 @@ export default function RegisterPage() {
                 <Input value={form.phone} onChange={update('phone')} placeholder="09171234567" />
               </Field>
               <Field label="Barangay">
-                <BarangaySelect value={form.barangay} onChange={update('barangay')} />
+                <BarangaySelect value={form.barangay} onChange={update('barangay')} options={['San Juan II', 'San Rafael III', 'San Rafael IV']} />
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">

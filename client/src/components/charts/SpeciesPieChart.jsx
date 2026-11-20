@@ -18,8 +18,7 @@ export default function SpeciesPieChart({ data, height = 260, valueFormatter }) 
           innerRadius="55%"
           outerRadius="80%"
           paddingAngle={2}
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-          labelLine={false}
+          label={false}
           isAnimationActive={false}
         >
           {data.map((entry, i) => (
@@ -27,7 +26,7 @@ export default function SpeciesPieChart({ data, height = 260, valueFormatter }) 
           ))}
         </Pie>
         <Tooltip formatter={(value, name) => [valueFormatter ? valueFormatter(value) : value, name]} contentStyle={{ borderRadius: 8, fontSize: 12 }} />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Legend wrapperStyle={{ fontSize: 12, paddingTop: 20 }} />
       </PieChart>
     </ResponsiveContainer>
   );

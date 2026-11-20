@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import toast from '../../utils/notify';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import toast, { confirm } from '../../utils/notify';
 import { fishpondApi, cycleApi } from '../../api/fishponds';
-import { apiErrorMessage } from '../../api/client';
+import { apiErrorMessage, assetUrl } from '../../api/client';
 import { useSpeciesList } from '../../hooks/useSpeciesList';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -11,6 +11,7 @@ import Modal from '../../components/ui/Modal';
 import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
+import FishpondPhoto from '../../components/ui/FishpondPhoto';
 import { Field, Input, Select, BarangaySelect } from '../../components/ui/FormField';
 import { FISHPOND_BARANGAYS } from '../../utils/barangays';
 import { MAX_AREA_HECTARES, MIN_AREA_HECTARES, MAX_CAPACITY } from '../../utils/limits';
@@ -28,6 +29,7 @@ function nextBatchName(cycles) {
 
 export default function FishpondDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { species } = useSpeciesList();
   const [fishpond, setFishpond] = useState(null);
   const [cycles, setCycles] = useState([]);
@@ -39,6 +41,9 @@ export default function FishpondDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -120,6 +125,20 @@ export default function FishpondDetail() {
     }
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await fishpondApi.remove(id);
+      toast.success('Fishpond deleted successfully');
+      navigate('/owner/fishponds');
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Failed to delete fishpond'));
+    } finally {
+      setDeleting(false);
+      setDeleteConfirmOpen(false);
+    }
+  };
+
   if (loading) return <Spinner />;
   if (!fishpond) return null;
 
@@ -134,8 +153,16 @@ export default function FishpondDetail() {
         </div>
         <div className="flex items-center gap-2">
           <Badge className={STATUS_BADGE_CLASS[fishpond.status]}>{fishpond.status}</Badge>
+          {fishpond.imageUrl && (
+            <Button size="sm" variant="secondary" icon="image" onClick={() => setImageViewerOpen(true)}>
+              View Photo
+            </Button>
+          )}
           <Button size="sm" variant="secondary" icon="edit" onClick={openEdit}>
             Edit Fishpond
+          </Button>
+          <Button size="sm" variant="secondary" icon="trash" onClick={() => setDeleteConfirmOpen(true)}>
+            Delete
           </Button>
         </div>
       </div>
@@ -269,6 +296,31 @@ export default function FishpondDetail() {
           </form>
         )}
       </Modal>
+
+      <Modal open={imageViewerOpen} onClose={() => setImageViewerOpen(false)} title="Fishpond Photo">
+        {fishpond?.imageUrl && (
+          <div className="flex justify-center">
+            <img src={assetUrl(fishpond.imageUrl)} alt={fishpond.name} className="max-h-96 max-w-full rounded-lg" />
+          </div>
+        )}
+      </Modal>
+
+      <Modal open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Fishpond">
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Are you sure you want to delete "{fishpond?.name}"? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setDeleteConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="danger" loading={deleting} onClick={handleDelete}>
+              Delete Fishpond
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
+
