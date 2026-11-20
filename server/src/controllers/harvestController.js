@@ -38,18 +38,20 @@ const logHarvest = asyncHandler(async (req, res) => {
   const cycle = await loadCycleWithAccess(req.user, req.params.cycleId);
   if (cycle.status !== 'active') throw new ApiError(400, 'Only active cycles can be harvested');
 
-  const { date, actualQuantity, actualWeightKg, notes } = req.body;
-  if (!date || actualQuantity === undefined || actualWeightKg === undefined) {
-    throw new ApiError(400, 'Date, actual quantity, and actual weight (kg) are required');
+  const { date, actualQuantity, notes } = req.body;
+  if (!date || actualQuantity === undefined) {
+    throw new ApiError(400, 'Date and actual quantity are required');
   }
   const quantity = Number(actualQuantity);
   if (!Number.isInteger(quantity) || quantity <= 0) throw new ApiError(400, 'Quantity harvested must be a whole number greater than zero');
-  if (!(Number(actualWeightKg) >= 0)) throw new ApiError(400, 'Total weight cannot be negative');
 
-  const { currentCount } = await computeHarvestEstimate(cycle);
+  const { currentCount, averageWeight } = await computeHarvestEstimate(cycle);
   if (quantity > currentCount) {
     throw new ApiError(400, `Only ${currentCount} fish remain in this batch, so you cannot harvest ${quantity}.`);
   }
+  // The total weight is no longer entered by hand; it is derived from the
+  // latest recorded average weight so production totals keep working.
+  const actualWeightKg = Math.round(((quantity * (averageWeight || 0)) / 1000) * 100) / 100;
 
   const harvest = await HarvestRecord.create({
     cycle: cycle._id,
@@ -71,7 +73,7 @@ const logHarvest = asyncHandler(async (req, res) => {
     user: cycle.fishpond.owner,
     fishpond: cycle.fishpond._id,
     type: 'general',
-    message: `Harvest logged for ${cycle.fishpond.name}: ${actualQuantity} fish, ${actualWeightKg} kg total.`,
+    message: `Harvest logged for ${cycle.fishpond.name}: ${quantity} fish (about ${actualWeightKg} kg).`,
   });
   await logActivity(req, { action: 'CREATE', targetType: 'HarvestRecord', targetId: harvest._id, details: `Logged harvest for ${cycle.fishpond.name}` });
 

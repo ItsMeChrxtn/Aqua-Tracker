@@ -1,32 +1,67 @@
 import { useEffect, useState } from 'react';
+import toast, { confirm } from '../../utils/notify';
 import { fishpondApi } from '../../api/fishponds';
+import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
+import Badge from '../../components/ui/Badge';
+import Button from '../../components/ui/Button';
 import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import FishpondPhoto from '../../components/ui/FishpondPhoto';
+import { STATUS_BADGE_CLASS } from '../../utils/format';
+
+function groupByOwner(fishponds) {
+  const byOwner = new Map();
+  fishponds.forEach((f) => {
+    if (!f.owner) return;
+    const key = f.owner._id;
+    if (!byOwner.has(key)) {
+      byOwner.set(key, { ...f.owner, fishpondCount: 0, approvedCount: 0, fishponds: [] });
+    }
+    const entry = byOwner.get(key);
+    entry.fishpondCount += 1;
+    if (f.status === 'approved') entry.approvedCount += 1;
+    entry.fishponds.push(f);
+  });
+  return [...byOwner.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
 
 export default function FishpondOwners() {
   const [owners, setOwners] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [photoOwner, setPhotoOwner] = useState(null);
+  const [ownerId, setOwnerId] = useState(null);
+  const [deletingId, setDeletingId] = useState('');
+
+  const load = () =>
+    fishpondApi
+      .list()
+      .then((fishponds) => setOwners(groupByOwner(fishponds)))
+      .finally(() => setLoading(false));
 
   useEffect(() => {
-    fishpondApi.list().then((fishponds) => {
-      const byOwner = new Map();
-      fishponds.forEach((f) => {
-        if (!f.owner) return;
-        const key = f.owner._id;
-        if (!byOwner.has(key)) {
-          byOwner.set(key, { ...f.owner, fishpondCount: 0, approvedCount: 0, photos: [] });
-        }
-        const entry = byOwner.get(key);
-        entry.fishpondCount += 1;
-        if (f.status === 'approved') entry.approvedCount += 1;
-        if (f.imageUrl) entry.photos.push(f);
-      });
-      setOwners([...byOwner.values()].sort((a, b) => a.name.localeCompare(b.name)));
-    }).finally(() => setLoading(false));
+    load();
   }, []);
+
+  const selectedOwner = owners.find((o) => o._id === ownerId) || null;
+
+  const deleteFishpond = async (f) => {
+    const ok = await confirm(`"${f.name}" of ${selectedOwner?.name || 'this owner'} will be permanently deleted. This cannot be undone.`, {
+      title: 'Delete this fishpond?',
+    });
+    if (!ok) return;
+    setDeletingId(f._id);
+    try {
+      await fishpondApi.remove(f._id);
+      toast.success('Fishpond deleted');
+      const remaining = (selectedOwner?.fishponds.length || 0) - 1;
+      if (remaining <= 0) setOwnerId(null);
+      await load();
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Failed to delete fishpond'));
+    } finally {
+      setDeletingId('');
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -43,17 +78,18 @@ export default function FishpondOwners() {
               { key: 'fishpondCount', header: 'Total Fishponds' },
               { key: 'approvedCount', header: 'Approved' },
               {
-                key: 'photos',
-                header: 'Photos',
-                render: (o) =>
-                  o.photos.length > 0 ? (
-                    <button type="button" onClick={() => setPhotoOwner(o)} className="flex items-center gap-2 text-xs font-medium text-brand-600 hover:underline">
-                      <FishpondPhoto src={o.photos[0].imageUrl} alt={o.photos[0].name} className="h-9 w-12 rounded-lg" />
-                      View ({o.photos.length})
+                key: 'fishponds',
+                header: 'Fishponds',
+                value: (o) => o.fishponds.map((f) => f.name).join(' '),
+                render: (o) => {
+                  const cover = o.fishponds.find((f) => f.imageUrl) || o.fishponds[0];
+                  return (
+                    <button type="button" onClick={() => setOwnerId(o._id)} className="flex items-center gap-2 text-xs font-medium text-brand-600 hover:underline">
+                      <FishpondPhoto src={cover?.imageUrl} alt={cover?.name} className="h-9 w-12 rounded-lg" />
+                      View ({o.fishponds.length})
                     </button>
-                  ) : (
-                    '—'
-                  ),
+                  );
+                },
               },
             ]}
             rows={owners}
@@ -63,14 +99,20 @@ export default function FishpondOwners() {
         </div>
       </Card>
 
-      <Modal open={!!photoOwner} onClose={() => setPhotoOwner(null)} title={`${photoOwner?.name || ''} — Fishpond Photos`} width="max-w-2xl">
+      <Modal open={!!selectedOwner} onClose={() => setOwnerId(null)} title={`${selectedOwner?.name || ''} — Fishponds`} width="max-w-2xl">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {photoOwner?.photos.map((f) => (
+          {selectedOwner?.fishponds.map((f) => (
             <figure key={f._id} className="overflow-hidden rounded-xl border border-slate-200">
               <FishpondPhoto src={f.imageUrl} alt={f.name} className="h-44 w-full" />
-              <figcaption className="px-3 py-2 text-sm">
-                <p className="font-semibold text-slate-900">{f.name}</p>
-                <p className="text-xs text-slate-500">{f.barangay}</p>
+              <figcaption className="flex items-start justify-between gap-2 px-3 py-2 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-900">{f.name}</p>
+                  <p className="text-xs text-slate-500">{f.barangay}</p>
+                  <Badge className={`mt-1 ${STATUS_BADGE_CLASS[f.status]}`}>{f.status}</Badge>
+                </div>
+                <Button size="sm" variant="danger" icon="trash" loading={deletingId === f._id} onClick={() => deleteFishpond(f)}>
+                  Delete
+                </Button>
               </figcaption>
             </figure>
           ))}

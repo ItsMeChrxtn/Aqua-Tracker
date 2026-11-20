@@ -132,13 +132,20 @@ const deleteFishpond = asyncHandler(async (req, res) => {
   if (!fishpond) throw new ApiError(404, 'Fishpond not found');
 
   const isOwner = fishpond.owner.equals(req.user._id);
-  const isAdmin = req.user.role === 'admin';
-  if (!isOwner && !isAdmin) throw new ApiError(403, 'You do not have access to this fishpond');
+  const isStaffOrAdmin = req.user.role === 'admin' || req.user.role === 'agriculture_staff';
+  if (!isOwner && !isStaffOrAdmin) throw new ApiError(403, 'You do not have access to this fishpond');
 
   const activeCycles = await ProductionCycle.countDocuments({ fishpond: fishpond._id, status: 'active' });
   if (activeCycles > 0) throw new ApiError(400, 'Cannot delete a fishpond with an active production cycle');
 
   await fishpond.deleteOne();
+  if (!isOwner) {
+    await createNotification({
+      user: fishpond.owner,
+      type: 'general',
+      message: `Your fishpond "${fishpond.name}" was removed by the Municipal Agriculture Office.`,
+    });
+  }
   await logActivity(req, { action: 'DELETE', targetType: 'Fishpond', targetId: req.params.id, details: `Deleted fishpond ${fishpond.name}` });
 
   res.json({ success: true, message: 'Fishpond deleted' });

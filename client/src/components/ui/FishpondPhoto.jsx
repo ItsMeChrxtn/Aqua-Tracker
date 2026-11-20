@@ -4,7 +4,7 @@ import Icon from './Icon';
 
 // Fishpond photo that falls back to a fish icon when there is no photo or the
 // uploaded file can no longer be loaded.
-export default function FishpondPhoto({ src, alt, className = '' }) {
+export default function FishpondPhoto({ src, alt, className = '', fit = 'cover' }) {
   const [failed, setFailed] = useState(false);
 
   if (!src || failed) {
@@ -14,5 +14,5 @@ export default function FishpondPhoto({ src, alt, className = '' }) {
       </div>
     );
   }
-  return <img src={assetUrl(src)} alt={alt} onError={() => setFailed(true)} className={`object-cover ${className}`} />;
+  return <img src={assetUrl(src)} alt={alt} onError={() => setFailed(true)} className={`${fit === 'contain' ? 'object-contain' : 'object-cover'} ${className}`} />;
 }

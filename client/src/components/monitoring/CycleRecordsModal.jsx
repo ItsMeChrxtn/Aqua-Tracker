@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import { stockingApi, feedingApi, mortalityApi, growthApi } from '../../api/fishponds';
+import { reportApi } from '../../api/misc';
+import { downloadFile } from '../../utils/download';
+import toast from '../../utils/notify';
 import Modal from '../ui/Modal';
+import ExportMenu from '../ui/ExportMenu';
 import DataTable from '../ui/DataTable';
 import Spinner from '../ui/Spinner';
 import { formatDate, formatNumber } from '../../utils/format';
@@ -47,6 +51,21 @@ const SECTIONS = [
 // Every monitoring record logged for one production cycle (batch).
 export default function CycleRecordsModal({ row, onClose }) {
   const [records, setRecords] = useState(null);
+  const [exporting, setExporting] = useState(false);
+
+  // Exports this batch's stocking, feeding, mortality and growth records.
+  const exportAs = async (type) => {
+    setExporting(true);
+    try {
+      const params = { cycleId: row.cycleId };
+      if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), 'aquatrack-batch-records.xlsx', params);
+      else await downloadFile(reportApi.exportPdfUrl(), 'aquatrack-batch-records.pdf', params);
+    } catch (err) {
+      if (!err?.handled) toast.error('Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!row) return;
@@ -62,6 +81,10 @@ export default function CycleRecordsModal({ row, onClose }) {
         <Spinner />
       ) : (
         <div className="space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 px-3 py-2">
+            <p className="text-xs text-slate-500">Export the stocking, mortality and growth monitoring records of this batch.</p>
+            <ExportMenu onExport={exportAs} loading={exporting} subject={`the records of ${row.fishpondName}${row.batchName ? ` (${row.batchName})` : ''}`} />
+          </div>
           {SECTIONS.map((s) => (
             <section key={s.key}>
               <h4 className="mb-2 text-sm font-semibold text-slate-900">

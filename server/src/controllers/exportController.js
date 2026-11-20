@@ -38,7 +38,9 @@ async function buildRows(req) {
   const fishponds = await Fishpond.find(fishpondFilter).populate('owner', 'name');
   const fishpondById = new Map(fishponds.map((f) => [f._id.toString(), f]));
 
-  const cycles = await ProductionCycle.find({ fishpond: { $in: fishponds.map((f) => f._id) } })
+  const cycleFilter = { fishpond: { $in: fishponds.map((f) => f._id) } };
+  if (req.query.cycleId && mongoose.isValidObjectId(req.query.cycleId)) cycleFilter._id = req.query.cycleId;
+  const cycles = await ProductionCycle.find(cycleFilter)
     .populate('species')
     .sort({ stockingDate: 1 });
 
@@ -69,15 +71,16 @@ async function buildRows(req) {
   return rows;
 }
 
-// Stocking, feeding and mortality records of the reported cycles, each tagged
+// Stocking, feeding, mortality and growth records of the reported cycles, each tagged
 // with its fishpond / species / batch.
 async function buildRecordSections(rows) {
   const byCycle = new Map(rows.map((r) => [r.cycleId.toString(), r]));
   const filter = { cycle: { $in: rows.map((r) => r.cycleId) } };
-  const [stocking, feeding, mortality] = await Promise.all([
+  const [stocking, feeding, mortality, growth] = await Promise.all([
     StockingRecord.find(filter).sort({ date: 1 }),
     FeedingRecord.find(filter).sort({ date: 1 }),
     MortalityRecord.find(filter).sort({ date: 1 }),
+    GrowthRecord.find(filter).sort({ date: 1 }),
   ]);
   const where = (rec) => {
     const r = byCycle.get(rec.cycle.toString());
@@ -103,7 +106,22 @@ async function buildRecordSections(rows) {
       widths: [70, 140, 110, 60, 60, 170, 150],
       rows: mortality.map((m) => [...where(m), show(m.quantity), show(m.cause), show(m.notes)]),
     },
+    {
+      title: 'Growth Records',
+      headers: [...base, 'Avg. Weight (g)', 'Sample Size', 'Notes'],
+      widths: [70, 140, 110, 60, 90, 80, 210],
+      rows: growth.map((g) => [...where(g), show(g.averageWeight), show(g.sampleSize), show(g.notes)]),
+    },
   ];
+}
+
+// A single batch (?cycleId=) gets its own file name.
+function reportFilename(req, rows, ext) {
+  if (req.query.cycleId && rows.length === 1) {
+    const slug = `${rows[0].fishpond}-${rows[0].batch}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return `aquatrack-batch-records-${slug || 'batch'}.${ext}`;
+  }
+  return `aquatrack-production-report.${ext}`;
 }
 
 const SUMMARY = {
@@ -145,10 +163,10 @@ const exportExcel = asyncHandler(async (req, res) => {
     section.rows.forEach((r) => ws.addRow(r));
   });
 
-  await logActivity(req, { action: 'EXPORT', targetType: 'Report', details: 'Exported production report (Excel)' });
+  await logActivity(req, { action: 'EXPORT', targetType: 'Report', details: req.query.cycleId ? 'Exported batch records report (Excel)' : 'Exported production report (Excel)' });
 
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', 'attachment; filename="aquatrack-production-report.xlsx"');
+  res.setHeader('Content-Disposition', `attachment; filename="${reportFilename(req, rows, 'xlsx')}"`);
   await workbook.xlsx.write(res);
   res.end();
 });
@@ -193,13 +211,14 @@ const exportPdf = asyncHandler(async (req, res) => {
   const sections = await buildRecordSections(rows);
 
   res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', 'attachment; filename="aquatrack-production-report.pdf"');
+  res.setHeader('Content-Disposition', `attachment; filename="${reportFilename(req, rows, 'pdf')}"`);
 
   const doc = new PDFDocument({ margin: 40, size: 'A4', layout: 'landscape' });
   doc.pipe(res);
 
   const fishpondNames = [...new Set(rows.map((r) => r.fishpond))];
-  const scope = req.query.fishpondId && fishpondNames.length === 1 ? ` — ${fishpondNames[0]}` : '';
+  let scope = req.query.fishpondId && fishpondNames.length === 1 ? ` — ${fishpondNames[0]}` : '';
+  if (req.query.cycleId && rows.length === 1) scope = ` — ${rows[0].fishpond} (${rows[0].species}, ${rows[0].batch})`;
   doc.fontSize(16).text(`AquaTrack — Production Report${scope}`, { align: 'center' });
   const generatedAt = new Date().toLocaleString('en-PH', { timeZone: TIME_ZONE, dateStyle: 'medium', timeStyle: 'short' });
   doc.fontSize(9).fillColor('#555').text(`Generated ${generatedAt} by ${req.user.name}`, { align: 'center' });
@@ -217,7 +236,7 @@ const exportPdf = asyncHandler(async (req, res) => {
     drawTable(doc, section.headers, section.widths, section.rows);
   });
 
-  await logActivity(req, { action: 'EXPORT', targetType: 'Report', details: 'Exported production report (PDF)' });
+  await logActivity(req, { action: 'EXPORT', targetType: 'Report', details: req.query.cycleId ? 'Exported batch records report (PDF)' : 'Exported production report (PDF)' });
 
   doc.end();
 });

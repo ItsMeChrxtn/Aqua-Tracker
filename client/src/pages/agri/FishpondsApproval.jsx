@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast, { confirm } from '../../utils/notify';
 import { fishpondApi } from '../../api/fishponds';
-import { apiErrorMessage, assetUrl } from '../../api/client';
+import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
@@ -19,6 +19,7 @@ export default function FishpondsApproval() {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [reason, setReason] = useState('');
   const [busyId, setBusyId] = useState('');
+  const [photoTarget, setPhotoTarget] = useState(null);
 
   const load = () => {
     setLoading(true);
@@ -84,9 +85,9 @@ export default function FishpondsApproval() {
                 header: 'Photo',
                 render: (f) =>
                   f.imageUrl ? (
-                    <a href={assetUrl(f.imageUrl)} target="_blank" rel="noreferrer" title="Open full photo">
+                    <button type="button" onClick={() => setPhotoTarget(f)} title="View photo" className="block overflow-hidden rounded-lg transition hover:opacity-80">
                       <FishpondPhoto src={f.imageUrl} alt={f.name} className="h-10 w-14 rounded-lg" />
-                    </a>
+                    </button>
                   ) : (
                     '—'
                   ),
@@ -117,6 +118,18 @@ export default function FishpondsApproval() {
           />
         </div>
       </Card>
+
+      <Modal open={!!photoTarget} onClose={() => setPhotoTarget(null)} title={`${photoTarget?.name || ''} — Fishpond Photo`} width="max-w-3xl">
+        {photoTarget && (
+          <div className="space-y-3">
+            <FishpondPhoto src={photoTarget.imageUrl} alt={photoTarget.name} fit="contain" className="max-h-[70vh] min-h-[12rem] w-full rounded-xl bg-slate-100" />
+            <p className="text-sm text-slate-500">
+              {photoTarget.owner?.name ? `${photoTarget.owner.name} · ` : ''}
+              {[photoTarget.address, photoTarget.barangay].filter(Boolean).join(', ')}
+            </p>
+          </div>
+        )}
+      </Modal>
 
       <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title={`Reject "${rejectTarget?.name}"`}>
         <form onSubmit={submitReject} className="space-y-4">

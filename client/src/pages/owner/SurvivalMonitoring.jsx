@@ -168,7 +168,7 @@ export default function SurvivalMonitoring() {
             ))}
           </Select>
           <SpeciesFilterSelect species={pondSpecies} value={speciesFilter} onChange={setSpeciesFilter} />
-          <Button icon="plus" variant="secondary" onClick={() => setAdding('mortality')}>Add Mortality</Button>
+          <Button icon="plus" onClick={() => setAdding('mortality')}>Add Mortality</Button>
           <Button icon="plus" onClick={() => setAdding('growth')}>Add Growth Record</Button>
         </div>
       </div>

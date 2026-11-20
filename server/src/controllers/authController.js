@@ -7,6 +7,8 @@ const { logActivity } = require('../utils/activityLog');
 const { issueOtp, checkOtp, clearOtp, secondsUntilResend } = require('../utils/otp');
 const { passwordError } = require('../utils/password');
 
+const REGISTRATION_BARANGAYS = ['San Juan II', 'San Rafael III', 'San Rafael IV'];
+
 // Public self-registration always creates a fishpond_owner account, which
 // stays unverified until the emailed OTP is confirmed via /verify-email.
 // agriculture_staff / admin accounts are created via the admin bootstrap
@@ -17,6 +19,15 @@ const register = asyncHandler(async (req, res) => {
 
   if (nameParts.length < 2 || !email || !password) {
     throw new ApiError(400, 'First name, surname, email, and password are required');
+  }
+  if (nameParts.some((part) => /\d/.test(part))) {
+    throw new ApiError(400, 'First name and surname must not contain numbers');
+  }
+  if (phone && !/^[0-9+\-\s()]+$/.test(String(phone))) {
+    throw new ApiError(400, 'Phone number must contain numbers only');
+  }
+  if (barangay && !REGISTRATION_BARANGAYS.includes(barangay)) {
+    throw new ApiError(400, `Barangay must be one of: ${REGISTRATION_BARANGAYS.join(', ')}`);
   }
   const invalidPassword = passwordError(password);
   if (invalidPassword) throw new ApiError(400, invalidPassword);
