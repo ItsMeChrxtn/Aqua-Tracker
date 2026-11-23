@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import toast, { confirm } from '../../utils/notify';
-import { fishpondApi, cycleApi } from '../../api/fishponds';
+import { fishpondApi, cycleApi, stockingApi } from '../../api/fishponds';
 import { apiErrorMessage, assetUrl } from '../../api/client';
 import { useSpeciesList } from '../../hooks/useSpeciesList';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
+import IconButton from '../../components/ui/IconButton';
 import Modal from '../../components/ui/Modal';
 import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
-import FishpondPhoto from '../../components/ui/FishpondPhoto';
-import { Field, Input, Select, BarangaySelect } from '../../components/ui/FormField';
-import { FISHPOND_BARANGAYS } from '../../utils/barangays';
-import { MAX_AREA_HECTARES, MIN_AREA_HECTARES, MAX_CAPACITY } from '../../utils/limits';
-import { hectaresToSquareMeters } from '../../utils/format';
+import { Field, Input, Select } from '../../components/ui/FormField';
+import BatchDetailsModal from '../../components/monitoring/BatchDetailsModal';
+import RecordFormModal from '../../components/monitoring/RecordFormModal';
+import { fishLabel } from '../../utils/cycleLabels';
+import { localTodayISO, nextDayISO, harvestMonthsLabel } from '../../utils/dates';
 import { formatArea, formatCapacity, formatDate, formatNumber, STATUS_BADGE_CLASS, WATER_TYPE_LABEL } from '../../utils/format';
 
 const sameName = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
@@ -27,23 +28,32 @@ function nextBatchName(cycles) {
   return `Batch ${n}`;
 }
 
+const EMPTY_CYCLE = { speciesId: '', batchName: '', stockingDate: '', expectedHarvestDate: '', initialCount: '' };
+
+const STOCKING_FIELDS = [
+  { name: 'date', label: 'Date', type: 'date', required: true, minToday: true, hint: 'Today or a later date' },
+  { name: 'quantity', label: 'Quantity (fingerlings)', type: 'number', required: true },
+  { name: 'source', label: 'Source / Supplier', type: 'text' },
+  { name: 'notes', label: 'Notes', type: 'textarea' },
+];
+
 export default function FishpondDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { species } = useSpeciesList();
   const [fishpond, setFishpond] = useState(null);
   const [cycles, setCycles] = useState([]);
+  const [stocking, setStocking] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ speciesId: '', batchName: '', stockingDate: '', initialCount: '' });
+  const [form, setForm] = useState(EMPTY_CYCLE);
   const [room, setRoom] = useState(null); // { capacity, current, available }
-  const [editOpen, setEditOpen] = useState(false);
-  const [editForm, setEditForm] = useState(null);
-  const [savingEdit, setSavingEdit] = useState(false);
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [viewingCycle, setViewingCycle] = useState(null);
+  const [stockModalOpen, setStockModalOpen] = useState(false);
+  const [batchFilter, setBatchFilter] = useState('');
+
+  const loadStocking = () => stockingApi.listForFishpond(id).then((res) => setStocking(res.records));
 
   const load = () => {
     setLoading(true);
@@ -51,6 +61,7 @@ export default function FishpondDetail() {
       .then(([fp, cy]) => {
         setFishpond(fp);
         setCycles(cy);
+        if (fp.status === 'approved') loadStocking();
       })
       .finally(() => setLoading(false));
   };
@@ -58,18 +69,27 @@ export default function FishpondDetail() {
   useEffect(load, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openCycleModal = () => {
-    setForm({ speciesId: '', batchName: nextBatchName(cycles), stockingDate: new Date().toISOString().slice(0, 10), initialCount: '' });
+    setForm({ ...EMPTY_CYCLE, batchName: nextBatchName(cycles), stockingDate: localTodayISO() });
     setRoom(null);
     cycleApi.capacity(id).then(setRoom);
     setModalOpen(true);
   };
 
   const duplicateBatch = form.batchName.trim() && cycles.some((c) => sameName(c.batchName, form.batchName));
+  const harvestMonths = harvestMonthsLabel(form.stockingDate, form.expectedHarvestDate);
 
   const submit = async (e) => {
     e.preventDefault();
     if (duplicateBatch) {
       toast.error(`"${form.batchName.trim()}" already exists in this fishpond. Use a different batch name.`);
+      return;
+    }
+    if (form.stockingDate < localTodayISO()) {
+      toast.error('Stocking date cannot be in the past.');
+      return;
+    }
+    if (!form.expectedHarvestDate || form.expectedHarvestDate <= form.stockingDate) {
+      toast.error('Estimated harvest date must be after the stocking date.');
       return;
     }
     if (room?.capacity && Number(form.initialCount) > room.available) {
@@ -81,7 +101,7 @@ export default function FishpondDetail() {
       await cycleApi.create(id, { ...form, initialCount: Number(form.initialCount) });
       toast.success('Production cycle started');
       setModalOpen(false);
-      setForm({ speciesId: '', batchName: '', stockingDate: '', initialCount: '' });
+      setForm(EMPTY_CYCLE);
       load();
     } catch (err) {
       toast.error(apiErrorMessage(err, 'Failed to start cycle'));
@@ -90,81 +110,40 @@ export default function FishpondDetail() {
     }
   };
 
-  const openEdit = () => {
-    setEditForm({
-      name: fishpond.name || '',
-      barangay: fishpond.barangay || '',
-      address: fishpond.address || '',
-      // Hide area values that are clearly broken so the owner re-enters them.
-      areaHectares: fishpond.areaSize && fishpond.areaSize <= MAX_AREA_HECTARES * 10000 ? String(fishpond.areaSize / 10000) : '',
-      capacity: fishpond.capacity ? String(fishpond.capacity) : '',
-      image: null,
-    });
-    setEditOpen(true);
-  };
-
-  const submitEdit = async (e) => {
-    e.preventDefault();
-    setSavingEdit(true);
+  const removeStocking = async (record) => {
+    if (!(await confirm('Delete this stocking record?'))) return;
     try {
-      const formData = new FormData();
-      formData.append('name', editForm.name);
-      formData.append('barangay', editForm.barangay);
-      formData.append('address', editForm.address);
-      if (editForm.areaHectares) formData.append('areaSize', hectaresToSquareMeters(editForm.areaHectares));
-      if (editForm.capacity) formData.append('capacity', editForm.capacity);
-      if (editForm.image) formData.append('image', editForm.image);
-      await fishpondApi.update(id, formData);
-      toast.success('Fishpond details updated');
-      setEditOpen(false);
-      load();
+      await stockingApi.remove(record._id);
+      toast.success('Stocking record deleted');
+      loadStocking();
     } catch (err) {
-      toast.error(apiErrorMessage(err, 'Failed to update fishpond'));
-    } finally {
-      setSavingEdit(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    try {
-      await fishpondApi.remove(id);
-      toast.success('Fishpond deleted successfully');
-      navigate('/owner/fishponds');
-    } catch (err) {
-      toast.error(apiErrorMessage(err, 'Failed to delete fishpond'));
-    } finally {
-      setDeleting(false);
-      setDeleteConfirmOpen(false);
+      toast.error(apiErrorMessage(err, 'Failed to delete record'));
     }
   };
 
   if (loading) return <Spinner />;
   if (!fishpond) return null;
 
+  const activeCycles = cycles.filter((c) => c.status === 'active');
+  const shownStocking = batchFilter ? stocking.filter((r) => r.cycle?._id === batchFilter) : stocking;
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">{fishpond.name}</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-900">{fishpond.name}</h2>
+            <Badge className={STATUS_BADGE_CLASS[fishpond.status]}>{fishpond.status}</Badge>
+          </div>
           <p className="flex items-center gap-1 text-sm text-slate-600">
             <Icon name="location" className="h-4 w-4" /> {fishpond.address ? `${fishpond.address}, ` : ''}{fishpond.barangay} · {formatArea(fishpond.areaSize, 'Area not set')} · {formatCapacity(fishpond.capacity, 'Capacity not set')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge className={STATUS_BADGE_CLASS[fishpond.status]}>{fishpond.status}</Badge>
-          {fishpond.imageUrl && (
-            <Button size="sm" variant="secondary" icon="image" onClick={() => setImageViewerOpen(true)}>
-              View Photo
-            </Button>
-          )}
-          <Button size="sm" variant="secondary" icon="edit" onClick={openEdit}>
-            Edit Fishpond
+        {fishpond.imageUrl && (
+          <Button size="sm" variant="secondary" icon="image" onClick={() => setImageViewerOpen(true)}>
+            View Photo
           </Button>
-          <Button size="sm" variant="secondary" icon="trash" onClick={() => setDeleteConfirmOpen(true)}>
-            Delete
-          </Button>
-        </div>
+        )}
       </div>
 
       {fishpond.status !== 'approved' && (
@@ -178,36 +157,81 @@ export default function FishpondDetail() {
       )}
 
       {fishpond.status === 'approved' && (
-        <Card
-          title="Production Cycles (Batches)"
-          action={
-            <Button size="sm" icon="plus" onClick={openCycleModal}>
-              Start New Cycle
-            </Button>
-          }
-        >
-          <DataTable
-            columns={[
-              { key: 'batchName', header: 'Batch', render: (c) => c.batchName || '—' },
-              { key: 'species', header: 'Species', render: (c) => `${c.species?.name} (${WATER_TYPE_LABEL[c.species?.waterType]})` },
-              { key: 'stockingDate', header: 'Stocking Date', render: (c) => formatDate(c.stockingDate) },
-              { key: 'initialCount', header: 'Initial Count' },
-              { key: 'status', header: 'Status', render: (c) => <Badge className={STATUS_BADGE_CLASS[c.status]}>{c.status}</Badge> },
-              {
-                key: 'actions',
-                header: '',
-                render: (c) =>
-                  c.status === 'active' && (
-                    <Link to="/owner/harvest-estimation" className="text-xs font-medium text-brand-600 hover:underline">
-                      View harvest estimate →
-                    </Link>
+        <>
+          <Card
+            title="Production Cycles (Batches)"
+            action={
+              <Button size="sm" icon="plus" onClick={openCycleModal}>
+                Start New Cycle
+              </Button>
+            }
+          >
+            <DataTable
+              columns={[
+                { key: 'batchName', header: 'Batch', render: (c) => c.batchName || '—' },
+                { key: 'species', header: 'Species', render: (c) => `${c.species?.name} (${WATER_TYPE_LABEL[c.species?.waterType]})`, value: (c) => c.species?.name },
+                { key: 'stockingDate', header: 'Stocking Date', render: (c) => formatDate(c.stockingDate) },
+                { key: 'expectedHarvestDate', header: 'Est. Harvest', render: (c) => (c.expectedHarvestDate ? formatDate(c.expectedHarvestDate) : '—') },
+                { key: 'initialCount', header: 'Initial Count', render: (c) => formatNumber(c.initialCount) },
+                { key: 'status', header: 'Status', render: (c) => <Badge className={STATUS_BADGE_CLASS[c.status]}>{c.status}</Badge> },
+                {
+                  key: 'actions',
+                  header: '',
+                  render: (c) => (
+                    <div className="flex items-center justify-end gap-3">
+                      {c.status === 'active' && (
+                        <Link to="/owner/harvest-estimation" className="text-xs font-medium text-brand-600 hover:underline">
+                          View harvest estimate →
+                        </Link>
+                      )}
+                      <IconButton icon="eye" label="View batch details" tone="brand" onClick={() => setViewingCycle(c)} />
+                    </div>
                   ),
-              },
-            ]}
-            rows={cycles}
-            emptyMessage="No production cycles yet. Start one to begin monitoring."
-          />
-        </Card>
+                },
+              ]}
+              rows={cycles}
+              emptyMessage="No production cycles yet. Start one to begin monitoring."
+            />
+          </Card>
+
+          <Card
+            title="Stocking Records"
+            action={
+              <div className="flex items-center gap-2">
+                <Select value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)} className="w-44">
+                  <option value="">All batches</option>
+                  {cycles.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {fishLabel(c)}
+                    </option>
+                  ))}
+                </Select>
+                <Button size="sm" icon="plus" onClick={() => setStockModalOpen(true)} disabled={activeCycles.length === 0}>
+                  Add Stock
+                </Button>
+              </div>
+            }
+          >
+            <DataTable
+              columns={[
+                { key: 'date', header: 'Date', render: (r) => formatDate(r.date) },
+                { key: 'batch', header: 'Batch', render: (r) => (r.cycle ? fishLabel(r.cycle) : '—'), value: (r) => r.cycle?.batchName },
+                { key: 'quantity', header: 'Fingerlings', render: (r) => formatNumber(r.quantity) },
+                { key: 'source', header: 'Source / Supplier', render: (r) => r.source || '—' },
+                { key: 'notes', header: 'Notes', render: (r) => r.notes || '—' },
+                {
+                  key: 'actions',
+                  header: '',
+                  render: (r) => <IconButton icon="trash" label="Delete record" tone="danger" onClick={() => removeStocking(r)} />,
+                },
+              ]}
+              rows={[...shownStocking].reverse()}
+              pageSize={5}
+              searchable={shownStocking.length > 5 ? 'Search supplier, notes…' : false}
+              emptyMessage={activeCycles.length === 0 ? 'Start a production cycle first, then add stock to it.' : 'No stocking records yet.'}
+            />
+          </Card>
+        </>
       )}
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Start New Production Cycle">
@@ -230,9 +254,29 @@ export default function FishpondDetail() {
           >
             <Input required value={form.batchName} onChange={(e) => setForm({ ...form, batchName: e.target.value })} />
           </Field>
-          <Field label="Stocking Date" required>
-            <Input type="date" required value={form.stockingDate} onChange={(e) => setForm({ ...form, stockingDate: e.target.value })} />
+          <Field label="Stocking Date" required hint="Today or a later date">
+            <Input
+              type="date"
+              required
+              min={localTodayISO()}
+              value={form.stockingDate}
+              onChange={(e) => setForm({ ...form, stockingDate: e.target.value })}
+            />
           </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Estimated Harvest Date" required>
+              <Input
+                type="date"
+                required
+                min={nextDayISO(form.stockingDate || localTodayISO())}
+                value={form.expectedHarvestDate}
+                onChange={(e) => setForm({ ...form, expectedHarvestDate: e.target.value })}
+              />
+            </Field>
+            <Field label="Harvest Month" hint="Counted automatically from the dates">
+              <Input readOnly value={harvestMonths} placeholder="—" />
+            </Field>
+          </div>
           <Field
             label="Initial Count (fingerlings)"
             required
@@ -262,65 +306,27 @@ export default function FishpondDetail() {
           </div>
         </form>
       </Modal>
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Fishpond">
-        {editForm && (
-          <form onSubmit={submitEdit} className="space-y-4">
-            <Field label="Fishpond Name" required>
-              <Input required value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
-            </Field>
-            <Field label="Barangay" required>
-              <BarangaySelect required options={FISHPOND_BARANGAYS} value={editForm.barangay} onChange={(e) => setEditForm({ ...editForm, barangay: e.target.value })} />
-            </Field>
-            <Field label="Address" required hint="Street, sitio, or landmark of the fishpond">
-              <Input required value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} placeholder="e.g. Purok 3, near the barangay hall" />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Area Size (hectares)" hint={`Up to ${MAX_AREA_HECTARES} hectares`}>
-                <Input type="number" min={MIN_AREA_HECTARES} max={MAX_AREA_HECTARES} step="any" value={editForm.areaHectares} onChange={(e) => setEditForm({ ...editForm, areaHectares: e.target.value })} />
-              </Field>
-              <Field label="Capacity (no. of fish)" hint="Most fish this pond can hold">
-                <Input type="number" min="1" max={MAX_CAPACITY} step="1" value={editForm.capacity} onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })} />
-              </Field>
-            </div>
-            <Field label="Replace Photo" hint="Optional">
-              <Input type="file" accept="image/*" onChange={(e) => setEditForm({ ...editForm, image: e.target.files[0] || null })} />
-            </Field>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="secondary" onClick={() => setEditOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" loading={savingEdit}>
-                Save Changes
-              </Button>
-            </div>
-          </form>
-        )}
-      </Modal>
+
+      <RecordFormModal
+        open={stockModalOpen}
+        onClose={() => setStockModalOpen(false)}
+        title={`Add Stock — ${fishpond.name}`}
+        api={stockingApi}
+        fields={STOCKING_FIELDS}
+        fishpondId={id}
+        activeCycles={activeCycles}
+        onSaved={loadStocking}
+      />
+
+      <BatchDetailsModal cycle={viewingCycle} fishpond={fishpond} onClose={() => setViewingCycle(null)} />
 
       <Modal open={imageViewerOpen} onClose={() => setImageViewerOpen(false)} title="Fishpond Photo">
-        {fishpond?.imageUrl && (
+        {fishpond.imageUrl && (
           <div className="flex justify-center">
             <img src={assetUrl(fishpond.imageUrl)} alt={fishpond.name} className="max-h-96 max-w-full rounded-lg" />
           </div>
         )}
       </Modal>
-
-      <Modal open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} title="Delete Fishpond">
-        <div className="space-y-4">
-          <p className="text-sm text-slate-600">
-            Are you sure you want to delete "{fishpond?.name}"? This action cannot be undone.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={() => setDeleteConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="button" variant="danger" loading={deleting} onClick={handleDelete}>
-              Delete Fishpond
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }
-

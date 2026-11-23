@@ -16,7 +16,16 @@ const router = express.Router();
 router.use(protect);
 
 router.get('/', listFishponds);
-router.post('/', authorize('fishpond_owner'), upload.single('image'), registerFishpond);
+router.post(
+  '/',
+  authorize('fishpond_owner'),
+  upload.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'moa', maxCount: 1 },
+    { name: 'spa', maxCount: 1 },
+  ]),
+  registerFishpond
+);
 router.get('/:id', getFishpond);
 router.put('/:id', upload.single('image'), updateFishpond);
 router.delete('/:id', deleteFishpond);

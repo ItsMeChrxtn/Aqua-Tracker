@@ -15,7 +15,6 @@ import OwnerDashboard from './pages/owner/OwnerDashboard';
 import FishpondList from './pages/owner/FishpondList';
 import RegisterFishpond from './pages/owner/RegisterFishpond';
 import FishpondDetail from './pages/owner/FishpondDetail';
-import StockingRecords from './pages/owner/StockingRecords';
 import FeedingRecords from './pages/owner/FeedingRecords';
 import SurvivalMonitoring from './pages/owner/SurvivalMonitoring';
 import HarvestEstimation from './pages/owner/HarvestEstimation';
@@ -23,10 +22,12 @@ import SalesRecords from './pages/owner/SalesRecords';
 import InventoryManagement from './pages/owner/InventoryManagement';
 import OwnerReports from './pages/owner/Reports';
 import ProfileSettings from './pages/owner/ProfileSettings';
+import FisherfolkRegistration from './pages/owner/FisherfolkRegistration';
 
 import AgriDashboard from './pages/agri/AgriDashboard';
 import FishpondsApproval from './pages/agri/FishpondsApproval';
 import FishpondOwners from './pages/agri/FishpondOwners';
+import FisherfolkApplications from './pages/agri/FisherfolkApplications';
 import RegisteredList from './pages/agri/RegisteredList';
 import ProductionOverview from './pages/agri/ProductionOverview';
 import MortalityOverview from './pages/agri/MortalityOverview';
@@ -64,11 +65,13 @@ export default function App() {
           <Route element={<ProtectedRoute roles={['fishpond_owner']} />}>
             <Route path="/owner" element={<DashboardLayout />}>
               <Route path="dashboard" element={<OwnerDashboard />} />
+              <Route path="fisherfolk-registration" element={<FisherfolkRegistration />} />
               <Route path="fishponds" element={<FishpondList />} />
               <Route path="fishponds/new" element={<RegisterFishpond />} />
               <Route path="fishponds/:id" element={<FishpondDetail />} />
               <Route path="inventory" element={<InventoryManagement />} />
-              <Route path="monitoring/stocking" element={<StockingRecords />} />
+              {/* Stocking records now live on each fishpond's page. */}
+              <Route path="monitoring/stocking" element={<Navigate to="/owner/fishponds" replace />} />
               <Route path="monitoring/feeding" element={<FeedingRecords />} />
               <Route path="monitoring/mortality" element={<Navigate to="/owner/monitoring/survival?add=mortality" replace />} />
               <Route path="monitoring/growth" element={<Navigate to="/owner/monitoring/survival?add=growth" replace />} />
@@ -85,6 +88,7 @@ export default function App() {
               <Route path="dashboard" element={<AgriDashboard />} />
               <Route path="fishponds" element={<FishpondsApproval />} />
               <Route path="owners" element={<FishpondOwners />} />
+              <Route path="fisherfolk" element={<FisherfolkApplications />} />
               <Route path="registered-list" element={<RegisteredList />} />
               <Route path="monitoring/production" element={<ProductionOverview />} />
               <Route path="monitoring/mortality" element={<MortalityOverview />} />

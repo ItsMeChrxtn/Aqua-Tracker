@@ -1,6 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import toast from '../../utils/notify';
 import { reportApi } from '../../api/misc';
+import { useSpeciesList } from '../../hooks/useSpeciesList';
+import { Select } from '../../components/ui/FormField';
+import SpeciesFilterSelect from '../../components/charts/SpeciesFilterSelect';
+import { FISHPOND_BARANGAYS } from '../../utils/barangays';
 import { downloadFile } from '../../utils/download';
 import Card from '../../components/ui/Card';
 import ExportMenu from '../../components/ui/ExportMenu';
@@ -14,15 +18,30 @@ export default function AgriReports() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState('');
   const [query, setQuery] = useState('');
+  const { species } = useSpeciesList();
+  const [barangay, setBarangay] = useState('');
+  const [speciesId, setSpeciesId] = useState('');
+  const [readiness, setReadiness] = useState('');
 
   useEffect(() => {
-    reportApi.municipalSummary().then(setData).finally(() => setLoading(false));
-  }, []);
+    const params = {};
+    if (barangay) params.barangay = barangay;
+    if (speciesId) params.speciesId = speciesId;
+    reportApi.municipalSummary(params).then(setData).finally(() => setLoading(false));
+  }, [barangay, speciesId]);
+
+  const rows = useMemo(
+    () => (data ? data.allCycles.filter((c) => !readiness || c.readinessStatus === readiness) : []),
+    [data, readiness]
+  );
 
   const exportAs = async (type) => {
     setExporting(type);
     try {
-      const params = query ? { q: query } : undefined;
+      const params = {};
+      if (query) params.q = query;
+      if (barangay) params.barangay = barangay;
+      if (speciesId) params.speciesId = speciesId;
       if (type === 'excel') await downloadFile(reportApi.exportExcelUrl(), 'aquatrack-municipal-report.xlsx', params);
       else await downloadFile(reportApi.exportPdfUrl(), 'aquatrack-municipal-report.pdf', params);
       toast.success('Report downloaded');
@@ -43,7 +62,23 @@ export default function AgriReports() {
         <ExportMenu onExport={exportAs} loading={!!exporting} />
       </div>
 
-      <Card title={`All Active Production Cycles (${data.allCycles.length})`} padded={false}>
+      <div className="flex flex-wrap items-center gap-3">
+        <Select value={barangay} onChange={(e) => setBarangay(e.target.value)} className="w-48">
+          <option value="">All barangays</option>
+          {FISHPOND_BARANGAYS.map((b) => (
+            <option key={b} value={b}>{b}</option>
+          ))}
+        </Select>
+        <SpeciesFilterSelect species={species} value={speciesId} onChange={setSpeciesId} />
+        <Select value={readiness} onChange={(e) => setReadiness(e.target.value)} className="w-44">
+          <option value="">All statuses</option>
+          {Object.entries(READINESS_LABEL).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </Select>
+      </div>
+
+      <Card title={`All Active Production Cycles (${rows.length})`} padded={false}>
         <div className="p-2">
           <DataTable
             columns={[
@@ -57,12 +92,12 @@ export default function AgriReports() {
               { key: 'estimatedHarvestKg', header: 'Est. Harvest (kg)' },
               { key: 'readinessStatus', header: 'Status', value: (r) => READINESS_LABEL[r.readinessStatus], render: (r) => <Badge className={READINESS_BADGE_CLASS[r.readinessStatus]}>{READINESS_LABEL[r.readinessStatus]}</Badge> },
             ]}
-            rows={data.allCycles}
+            rows={rows}
             keyField="cycleId"
             searchable="Search fishpond, owner, barangay, species…"
             query={query}
             onQueryChange={setQuery}
-            emptyMessage="No active production cycles yet."
+            emptyMessage="No active production cycles match these filters."
           />
         </div>
       </Card>

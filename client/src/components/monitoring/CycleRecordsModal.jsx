@@ -67,13 +67,17 @@ export default function CycleRecordsModal({ row, onClose }) {
     }
   };
 
+  // The modal's content reads `row`, so render nothing once it is closed —
+  // reading row.fishpondName after the X was pressed blanked the whole page.
   useEffect(() => {
-    if (!row) return;
     setRecords(null);
+    if (!row) return;
     Promise.all(SECTIONS.map((s) => s.api.listForCycle(row.cycleId))).then((lists) =>
       setRecords(Object.fromEntries(SECTIONS.map((s, i) => [s.key, lists[i]])))
     );
   }, [row]);
+
+  if (!row) return null;
 
   return (
     <Modal open={!!row} onClose={onClose} width="max-w-4xl" title={row ? `${row.fishpondName} — ${row.species}${row.batchName ? ` (${row.batchName})` : ''}` : ''}>

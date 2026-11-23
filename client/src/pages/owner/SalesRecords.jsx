@@ -16,7 +16,7 @@ import SpeciesFilterSelect from '../../components/charts/SpeciesFilterSelect';
 import { formatDate, formatNumber } from '../../utils/format';
 import IconButton from '../../components/ui/IconButton';
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+import { localTodayISO as todayISO } from '../../utils/dates';
 const EMPTY_FORM = { date: todayISO(), buyerName: '', quantityKg: '', pricePerKg: '', notes: '' };
 
 export default function SalesRecords() {

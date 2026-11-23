@@ -16,6 +16,7 @@ const activityLogRoutes = require('./routes/activityLogRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const fisherfolkRoutes = require('./routes/fisherfolkRoutes');
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/species', speciesRoutes);
 app.use('/api/fishponds', fishpondRoutes);
+app.use('/api/fisherfolk', fisherfolkRoutes);
 // Mounted before the catch-all /api routers below, which require a login for
 // everything that passes through them; /api/settings/public must stay open.
 app.use('/api/settings', settingsRoutes);

@@ -11,22 +11,28 @@ import { Select, Field, Textarea } from '../../components/ui/FormField';
 import { formatArea, formatCapacity, formatDate, STATUS_BADGE_CLASS } from '../../utils/format';
 import IconButton from '../../components/ui/IconButton';
 import FishpondPhoto from '../../components/ui/FishpondPhoto';
+import FishpondRegistrationModal from '../../components/fishpond/FishpondRegistrationModal';
+import { FISHPOND_BARANGAYS } from '../../utils/barangays';
 
 export default function FishpondsApproval() {
   const [fishponds, setFishponds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [barangayFilter, setBarangayFilter] = useState('');
   const [rejectTarget, setRejectTarget] = useState(null);
   const [reason, setReason] = useState('');
   const [busyId, setBusyId] = useState('');
-  const [photoTarget, setPhotoTarget] = useState(null);
+  const [viewing, setViewing] = useState(null);
 
   const load = () => {
     setLoading(true);
-    fishpondApi.list(statusFilter ? { status: statusFilter } : undefined).then(setFishponds).finally(() => setLoading(false));
+    const params = {};
+    if (statusFilter) params.status = statusFilter;
+    if (barangayFilter) params.barangay = barangayFilter;
+    fishpondApi.list(params).then(setFishponds).finally(() => setLoading(false));
   };
 
-  useEffect(load, [statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(load, [statusFilter, barangayFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const approve = async (fishpond) => {
     const ok = await confirm(`"${fishpond.name}" by ${fishpond.owner?.name || 'this owner'} will be approved so the owner can start monitoring.`, {
@@ -39,6 +45,7 @@ export default function FishpondsApproval() {
     try {
       await fishpondApi.approve(id);
       toast.success('Fishpond approved');
+      setViewing(null);
       load();
     } catch (err) {
       toast.error(apiErrorMessage(err, 'Failed to approve'));
@@ -54,6 +61,7 @@ export default function FishpondsApproval() {
       await fishpondApi.reject(rejectTarget._id, reason);
       toast.success('Fishpond registration rejected');
       setRejectTarget(null);
+      setViewing(null);
       setReason('');
       load();
     } catch (err) {
@@ -67,12 +75,20 @@ export default function FishpondsApproval() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-slate-900">Fishponds</h2>
+        <div className="flex flex-wrap items-center gap-3">
+        <Select value={barangayFilter} onChange={(e) => setBarangayFilter(e.target.value)} className="w-48">
+          <option value="">All barangays</option>
+          {FISHPOND_BARANGAYS.map((b) => (
+            <option key={b} value={b}>{b}</option>
+          ))}
+        </Select>
         <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-44">
           <option value="">All statuses</option>
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
         </Select>
+        </div>
       </div>
 
       <Card padded={false}>
@@ -83,31 +99,42 @@ export default function FishpondsApproval() {
               {
                 key: 'photo',
                 header: 'Photo',
-                render: (f) =>
-                  f.imageUrl ? (
-                    <button type="button" onClick={() => setPhotoTarget(f)} title="View photo" className="block overflow-hidden rounded-lg transition hover:opacity-80">
-                      <FishpondPhoto src={f.imageUrl} alt={f.name} className="h-10 w-14 rounded-lg" />
-                    </button>
-                  ) : (
-                    '—'
-                  ),
+                render: (f) => (
+                  <button type="button" onClick={() => setViewing(f)} title="View registration details" className="block overflow-hidden rounded-lg transition hover:opacity-80">
+                    <FishpondPhoto src={f.imageUrl} alt={f.name} className="h-10 w-14 rounded-lg" />
+                  </button>
+                ),
               },
-              { key: 'name', header: 'Fishpond' },
+              {
+                key: 'name',
+                header: 'Fishpond',
+                render: (f) => (
+                  <button type="button" onClick={() => setViewing(f)} className="text-left font-medium text-slate-900 hover:text-brand-600 hover:underline">
+                    {f.name}
+                  </button>
+                ),
+                value: (f) => f.name,
+              },
               { key: 'owner', header: 'Owner', render: (f) => f.owner?.name, value: (f) => f.owner?.name },
               { key: 'barangay', header: 'Barangay' },
               { key: 'address', header: 'Address', render: (f) => f.address || '—' },
               { key: 'areaSize', header: 'Area', render: (f) => formatArea(f.areaSize) },
               { key: 'capacity', header: 'Capacity', render: (f) => formatCapacity(f.capacity) },
               { key: 'createdAt', header: 'Registered', render: (f) => formatDate(f.createdAt) },
+              { key: 'documents', header: 'MOA', render: (f) => (f.moaUrl ? <span className="text-xs font-medium text-emerald-700">Submitted</span> : <span className="text-xs text-slate-400">—</span>), value: (f) => (f.moaUrl ? 'Submitted' : '') },
               { key: 'status', header: 'Status', render: (f) => <Badge className={STATUS_BADGE_CLASS[f.status]}>{f.status}</Badge> },
               {
                 key: 'actions',
                 header: '',
-                render: (f) =>
-                  f.status === 'pending' && (
+                render: (f) => (
                     <div className="flex gap-1.5">
-                      <IconButton icon="check" label="Approve" tone="success" loading={busyId === f._id} onClick={() => approve(f)} />
-                      <IconButton icon="close" label="Reject" tone="danger" onClick={() => setRejectTarget(f)} />
+                      <IconButton icon="eye" label="View registration details" tone="brand" onClick={() => setViewing(f)} />
+                      {f.status === 'pending' && (
+                        <>
+                          <IconButton icon="check" label="Approve" tone="success" loading={busyId === f._id} onClick={() => approve(f)} />
+                          <IconButton icon="close" label="Reject" tone="danger" onClick={() => setRejectTarget(f)} />
+                        </>
+                      )}
                     </div>
                   ),
               },
@@ -119,17 +146,13 @@ export default function FishpondsApproval() {
         </div>
       </Card>
 
-      <Modal open={!!photoTarget} onClose={() => setPhotoTarget(null)} title={`${photoTarget?.name || ''} — Fishpond Photo`} width="max-w-3xl">
-        {photoTarget && (
-          <div className="space-y-3">
-            <FishpondPhoto src={photoTarget.imageUrl} alt={photoTarget.name} fit="contain" className="max-h-[70vh] min-h-[12rem] w-full rounded-xl bg-slate-100" />
-            <p className="text-sm text-slate-500">
-              {photoTarget.owner?.name ? `${photoTarget.owner.name} · ` : ''}
-              {[photoTarget.address, photoTarget.barangay].filter(Boolean).join(', ')}
-            </p>
-          </div>
-        )}
-      </Modal>
+      <FishpondRegistrationModal
+        fishpond={viewing}
+        onClose={() => setViewing(null)}
+        onApprove={approve}
+        onReject={(f) => setRejectTarget(f)}
+        busy={busyId === viewing?._id}
+      />
 
       <Modal open={!!rejectTarget} onClose={() => setRejectTarget(null)} title={`Reject "${rejectTarget?.name}"`}>
         <form onSubmit={submitReject} className="space-y-4">

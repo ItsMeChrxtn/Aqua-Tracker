@@ -5,8 +5,7 @@ import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import { Field, Input, Select, SelectWithOther, Textarea } from '../ui/FormField';
 import { fishLabel } from '../../utils/cycleLabels';
-
-const todayISO = () => new Date().toISOString().slice(0, 10);
+import { localTodayISO as todayISO } from '../../utils/dates';
 
 function buildInitialForm(fields) {
   return fields.reduce((acc, f) => ({ ...acc, [f.name]: f.type === 'date' ? todayISO() : '' }), {});
@@ -101,7 +100,7 @@ export default function RecordFormModal({ open, onClose, title, api, fields, fis
               <Input
                 type={f.type}
                 step={f.type === 'number' ? 'any' : undefined}
-                min={f.type === 'number' ? 0 : undefined}
+                min={f.type === 'number' ? 0 : f.minToday ? todayISO() : undefined}
                 required={f.required}
                 value={form[f.name]}
                 onChange={(e) => set(f.name, e.target.value)}

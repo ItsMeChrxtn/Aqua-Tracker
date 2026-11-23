@@ -9,6 +9,7 @@ import { Select } from '../../components/ui/FormField';
 import SpeciesFilterSelect from '../charts/SpeciesFilterSelect';
 import LineTrendChart from '../charts/LineTrendChart';
 import { withExistingBarangays } from '../../utils/barangays';
+import { READINESS_LABEL } from '../../utils/format';
 
 /**
  * Shared shell for the four municipal-wide monitoring overview pages
@@ -19,8 +20,9 @@ export default function AgriOverviewPage({ title, description, columns, chart })
   const { species } = useSpeciesList();
   const [barangay, setBarangay] = useState('');
   const [speciesId, setSpeciesId] = useState('');
+  const [readiness, setReadiness] = useState('');
   const [barangays, setBarangays] = useState([]);
-  const [cycles, setCycles] = useState([]);
+  const [allCycles, setAllCycles] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,9 +36,11 @@ export default function AgriOverviewPage({ title, description, columns, chart })
     if (speciesId) params.speciesId = speciesId;
     reportApi
       .municipalSummary(params)
-      .then((res) => setCycles(res.allCycles))
+      .then((res) => setAllCycles(res.allCycles))
       .finally(() => setLoading(false));
   }, [barangay, speciesId]);
+
+  const cycles = useMemo(() => (readiness ? allCycles.filter((c) => c.readinessStatus === readiness) : allCycles), [allCycles, readiness]);
 
   // One point per fishpond on the x-axis and one line per species, so a pond
   // stocking several species shows each separately.
@@ -73,6 +77,12 @@ export default function AgriOverviewPage({ title, description, columns, chart })
             ))}
           </Select>
           <SpeciesFilterSelect species={species} value={speciesId} onChange={setSpeciesId} />
+          <Select value={readiness} onChange={(e) => setReadiness(e.target.value)} className="w-44">
+            <option value="">All statuses</option>
+            {Object.entries(READINESS_LABEL).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </Select>
         </div>
       </div>
 

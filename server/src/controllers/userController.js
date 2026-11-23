@@ -4,6 +4,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { ApiError } = require('../middleware/errorHandler');
 const { logActivity } = require('../utils/activityLog');
 const { generateTempPassword } = require('../utils/otp');
+const { assertValidPhone } = require('../utils/validation');
 const { sendEmail } = require('../utils/mailer');
 const { accountCreatedEmail } = require('../utils/emailTemplates');
 
@@ -62,6 +63,8 @@ const createUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, `Role must be one of: ${validRoles.join(', ')}`);
   }
 
+  assertValidPhone(phone);
+
   const existing = await User.findOne({ email: email.toLowerCase() });
   if (existing) throw new ApiError(409, 'An account with this email already exists');
 
@@ -94,6 +97,7 @@ const updateUser = asyncHandler(async (req, res) => {
   if (!user) throw new ApiError(404, 'User not found');
 
   const { name, role, phone, barangay, status } = req.body;
+  assertValidPhone(phone);
   if (name !== undefined) user.name = name;
   if (phone !== undefined) user.phone = phone;
   if (barangay !== undefined) user.barangay = barangay;

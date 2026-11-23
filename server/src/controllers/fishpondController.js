@@ -13,7 +13,7 @@ const MAX_CAPACITY = 100000000;
 const isSet = (value) => value !== undefined && value !== '';
 
 // The barangays where fishponds can be registered.
-const FISHPOND_BARANGAYS = ['San Juan II', 'San Rafael III', 'San Rafael IV'];
+const { ALLOWED_BARANGAYS: FISHPOND_BARANGAYS } = require('../utils/validation');
 
 // Checked here rather than as schema `max` validators: Mongoose re-validates
 // loaded fields on save, so a schema limit would block approving or editing
@@ -68,8 +68,15 @@ const getFishpond = asyncHandler(async (req, res) => {
   res.json({ success: true, fishpond });
 });
 
+const uploadedPath = (file) => (file ? `/uploads/${file.filename}` : undefined);
+
 const registerFishpond = asyncHandler(async (req, res) => {
   const { name, barangay, address, areaSize, capacity } = req.body;
+  const files = req.files || {};
+  const [image] = files.image || [];
+  const [moa] = files.moa || [];
+  const [spa] = files.spa || [];
+  if (!moa) throw new ApiError(400, 'Please attach the MOA (Memorandum of Agreement) before submitting');
   if (!name || !barangay || !String(address || '').trim()) throw new ApiError(400, 'Fishpond name, barangay, and address are required');
   if (!FISHPOND_BARANGAYS.includes(barangay)) {
     throw new ApiError(400, `Fishponds can only be registered in ${FISHPOND_BARANGAYS.join(', ')}.`);
@@ -83,7 +90,11 @@ const registerFishpond = asyncHandler(async (req, res) => {
     address,
     areaSize,
     capacity,
-    imageUrl: req.file ? `/uploads/${req.file.filename}` : undefined,
+    imageUrl: uploadedPath(image),
+    moaUrl: uploadedPath(moa),
+    moaName: moa.originalname,
+    spaUrl: uploadedPath(spa),
+    spaName: spa ? spa.originalname : undefined,
     status: 'pending',
   });
 

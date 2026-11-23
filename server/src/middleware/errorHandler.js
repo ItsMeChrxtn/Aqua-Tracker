@@ -34,6 +34,11 @@ function errorHandler(err, req, res, next) {
     message = `${field ? field : 'Value'} already in use`;
   }
 
+  if (err.name === 'MulterError') {
+    statusCode = 400;
+    message = err.code === 'LIMIT_FILE_SIZE' ? 'File is too large (max 10 MB)' : err.message;
+  }
+
   if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
     statusCode = 401;
     message = 'Not authorized, invalid or expired token';

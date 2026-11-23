@@ -6,6 +6,7 @@ const { loadFishpondWithAccess, loadCycleWithAccess } = require('../utils/access
 const { logActivity } = require('../utils/activityLog');
 const { computeHarvestEstimate } = require('../utils/calculations');
 const { assertWithinCapacity, getPondFishCount } = require('../utils/capacity');
+const { assertNotPastDate, dateOnly } = require('../utils/validation');
 
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -27,9 +28,15 @@ const createCycle = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Fishpond must be approved before starting a production cycle');
   }
 
-  const { speciesId, batchName, stockingDate, initialCount, notes } = req.body;
-  if (!speciesId || !stockingDate || !initialCount) {
-    throw new ApiError(400, 'Species, stocking date, and initial count are required');
+  const { speciesId, batchName, stockingDate, expectedHarvestDate, initialCount, notes } = req.body;
+  if (!speciesId || !stockingDate || !expectedHarvestDate || !initialCount) {
+    throw new ApiError(400, 'Species, stocking date, estimated harvest date, and initial count are required');
+  }
+  assertNotPastDate(stockingDate, 'Stocking date');
+  const harvestDay = dateOnly(expectedHarvestDate);
+  if (!harvestDay) throw new ApiError(400, 'Estimated harvest date is not a valid date');
+  if (harvestDay <= dateOnly(stockingDate)) {
+    throw new ApiError(400, 'Estimated harvest date must be after the stocking date');
   }
   const species = await Species.findById(speciesId);
   if (!species) throw new ApiError(404, 'Species not found');
@@ -46,6 +53,7 @@ const createCycle = asyncHandler(async (req, res) => {
     species: species._id,
     batchName: name || undefined,
     stockingDate,
+    expectedHarvestDate,
     initialCount,
     notes,
   });

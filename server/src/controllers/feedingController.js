@@ -4,6 +4,7 @@ const InventoryItem = require('../models/InventoryItem');
 const { createRecordHandlers } = require('../utils/recordFactory');
 const { ApiError } = require('../middleware/errorHandler');
 const { changeStock } = require('../utils/inventory');
+const { assertNotPastDate } = require('../utils/validation');
 
 // Always offered, whether or not it is tracked in inventory.
 const ORGANIC_FEED = 'Organic feeds (lumot)';
@@ -11,6 +12,7 @@ const ORGANIC_FEED = 'Organic feeds (lumot)';
 const pickFields = (body) => {
   const { date, feedType, quantityKg, notes } = body;
   if (!date || quantityKg === undefined) throw new ApiError(400, 'Date and feed quantity are required');
+  assertNotPastDate(date, 'Feeding date');
   if (!(Number(quantityKg) > 0)) throw new ApiError(400, 'Feed quantity must be greater than zero');
   if (!feedType) throw new ApiError(400, 'Feed type is required');
   return { date, feedType, quantityKg: Number(quantityKg), notes };

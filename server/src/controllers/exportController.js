@@ -40,6 +40,7 @@ async function buildRows(req) {
 
   const cycleFilter = { fishpond: { $in: fishponds.map((f) => f._id) } };
   if (req.query.cycleId && mongoose.isValidObjectId(req.query.cycleId)) cycleFilter._id = req.query.cycleId;
+  if (req.query.speciesId && mongoose.isValidObjectId(req.query.speciesId)) cycleFilter.species = req.query.speciesId;
   const cycles = await ProductionCycle.find(cycleFilter)
     .populate('species')
     .sort({ stockingDate: 1 });

@@ -6,7 +6,12 @@ import { apiErrorMessage } from '../../api/client';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { Field, Input, PasswordInput, BarangaySelect } from '../../components/ui/FormField';
-import { PASSWORD_MIN, PASSWORD_MAX, PASSWORD_HINT } from '../../utils/limits';
+import { PASSWORD_MAX } from '../../utils/limits';
+import { isStrongPassword } from '../../utils/password';
+import PasswordChecklist from '../../components/ui/PasswordChecklist';
+import { FISHPOND_BARANGAYS } from '../../utils/barangays';
+
+const hasLetters = (value) => !/^[0-9+() -]*$/.test(value);
 
 export default function ProfileSettings() {
   const { user, refreshUser } = useAuth();
@@ -18,6 +23,10 @@ export default function ProfileSettings() {
 
   const saveProfile = async (e) => {
     e.preventDefault();
+    if (form.phone && hasLetters(form.phone)) {
+      toast.error('Phone number must contain numbers only');
+      return;
+    }
     setSavingProfile(true);
     try {
       await authApi.updateProfile(form);
@@ -32,6 +41,10 @@ export default function ProfileSettings() {
 
   const savePassword = async (e) => {
     e.preventDefault();
+    if (!isStrongPassword(pw.newPassword)) {
+      toast.error('Your new password does not meet all the requirements yet');
+      return;
+    }
     if (pw.newPassword !== pw.confirmPassword) {
       toast.error('New passwords do not match');
       return;
@@ -62,10 +75,10 @@ export default function ProfileSettings() {
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Phone">
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <Input inputMode="tel" maxLength={13} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="09171234567" />
             </Field>
             <Field label="Barangay">
-              <BarangaySelect value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
+              <BarangaySelect options={FISHPOND_BARANGAYS} value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
             </Field>
           </div>
           <div className="flex justify-end">
@@ -80,13 +93,14 @@ export default function ProfileSettings() {
             <PasswordInput required value={pw.currentPassword} onChange={(e) => setPw({ ...pw, currentPassword: e.target.value })} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="New Password" required hint={PASSWORD_HINT}>
-              <PasswordInput minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} required value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} />
+            <Field label="New Password" required>
+              <PasswordInput maxLength={PASSWORD_MAX} required value={pw.newPassword} onChange={(e) => setPw({ ...pw, newPassword: e.target.value })} />
             </Field>
             <Field label="Confirm New Password" required>
               <PasswordInput required value={pw.confirmPassword} onChange={(e) => setPw({ ...pw, confirmPassword: e.target.value })} />
             </Field>
           </div>
+          <PasswordChecklist password={pw.newPassword} />
           <div className="flex justify-end">
             <Button type="submit" loading={savingPw}>Change Password</Button>
           </div>

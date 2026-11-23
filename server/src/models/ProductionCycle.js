@@ -6,6 +6,7 @@ const productionCycleSchema = new mongoose.Schema(
     species: { type: mongoose.Schema.Types.ObjectId, ref: 'Species', required: true },
     batchName: { type: String, trim: true }, // e.g. "Batch 1"
     stockingDate: { type: Date, required: true },
+    expectedHarvestDate: { type: Date }, // owner's planned harvest date
     initialCount: { type: Number, required: true, min: 1 },
     status: {
       type: String,

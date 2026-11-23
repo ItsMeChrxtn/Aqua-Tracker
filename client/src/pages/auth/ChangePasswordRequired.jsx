@@ -9,7 +9,9 @@ import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import { ROLE_HOME } from '../../utils/navConfig';
 import AuthBrandPanel from './AuthBrandPanel';
-import { PASSWORD_MIN, PASSWORD_MAX, PASSWORD_HINT } from '../../utils/limits';
+import { PASSWORD_MAX } from '../../utils/limits';
+import { isStrongPassword } from '../../utils/password';
+import PasswordChecklist from '../../components/ui/PasswordChecklist';
 
 const EMPTY = { currentPassword: '', newPassword: '', confirmPassword: '' };
 
@@ -27,6 +29,10 @@ export default function ChangePasswordRequired() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!isStrongPassword(form.newPassword)) {
+      toast.error('Your new password does not meet all the requirements yet');
+      return;
+    }
     if (form.newPassword !== form.confirmPassword) {
       toast.error('New passwords do not match');
       return;
@@ -73,12 +79,13 @@ export default function ChangePasswordRequired() {
             <Field label="Temporary password" required hint="The password from your welcome email">
               <PasswordInput required autoComplete="current-password" value={form.currentPassword} onChange={update('currentPassword')} />
             </Field>
-            <Field label="New password" required hint={PASSWORD_HINT}>
-              <PasswordInput required minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} autoComplete="new-password" value={form.newPassword} onChange={update('newPassword')} />
+            <Field label="New password" required>
+              <PasswordInput required maxLength={PASSWORD_MAX} autoComplete="new-password" value={form.newPassword} onChange={update('newPassword')} />
             </Field>
             <Field label="Confirm new password" required>
               <PasswordInput required autoComplete="new-password" value={form.confirmPassword} onChange={update('confirmPassword')} />
             </Field>
+            <PasswordChecklist password={form.newPassword} />
             <Button type="submit" loading={saving} className="w-full justify-center py-2.5">
               Save New Password
             </Button>

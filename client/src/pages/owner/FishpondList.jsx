@@ -9,16 +9,26 @@ import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
 import FishpondPhoto from '../../components/ui/FishpondPhoto';
 import { formatArea, formatCapacity, formatDate, STATUS_BADGE_CLASS } from '../../utils/format';
+import { Input, Select } from '../../components/ui/FormField';
 
 export default function FishpondList() {
   const [fishponds, setFishponds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState('');
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     fishpondApi.list().then(setFishponds).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <Spinner />;
+
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = fishponds.filter((f) => {
+    if (status && f.status !== status) return false;
+    const text = [f.name, f.barangay, f.address].join(' ').toLowerCase();
+    return terms.every((t) => text.includes(t));
+  });
 
   return (
     <div className="space-y-5">
@@ -28,6 +38,20 @@ export default function FishpondList() {
           <Button icon="plus">Register Fishpond</Button>
         </Link>
       </div>
+
+      {fishponds.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="w-64">
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search fishpond, barangay…" />
+          </div>
+          <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-44">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </Select>
+        </div>
+      )}
 
       {fishponds.length === 0 ? (
         <EmptyState
@@ -41,7 +65,8 @@ export default function FishpondList() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {fishponds.map((f) => (
+          {shown.length === 0 && <p className="col-span-full py-8 text-center text-sm text-slate-400">No fishponds match these filters.</p>}
+          {shown.map((f) => (
             <Link
               key={f._id}
               to={`/owner/fishponds/${f._id}`}

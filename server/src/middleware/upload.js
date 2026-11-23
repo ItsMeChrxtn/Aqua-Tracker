@@ -1,6 +1,7 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { ApiError } = require('./errorHandler');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -14,18 +15,24 @@ const storage = multer.diskStorage({
   },
 });
 
+const IMAGE_TYPES = /^image\/(png|jpe?g|webp|gif)$/i;
+// MOA / SPA may be a photo of the paper or the document file itself.
+const DOCUMENT_TYPES = /^(image\/(png|jpe?g|webp|gif)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i;
+const DOCUMENT_FIELDS = ['moa', 'spa', 'barangayCert'];
+
 const fileFilter = (req, file, cb) => {
-  if (/^image\/(png|jpe?g|webp|gif)$/i.test(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only image files (png, jpg, webp, gif) are allowed'));
+  if (DOCUMENT_FIELDS.includes(file.fieldname)) {
+    if (DOCUMENT_TYPES.test(file.mimetype)) return cb(null, true);
+    return cb(new ApiError(400, 'MOA, SPA and Barangay Certification must be a photo (png, jpg, webp) or a PDF / Word file'));
   }
+  if (IMAGE_TYPES.test(file.mimetype)) return cb(null, true);
+  return cb(new ApiError(400, 'Only image files (png, jpg, webp, gif) are allowed'));
 };
 
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
 });
 
 module.exports = upload;

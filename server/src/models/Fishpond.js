@@ -9,6 +9,12 @@ const fishpondSchema = new mongoose.Schema(
     areaSize: { type: Number, min: 0 }, // stored in square meters; shown in hectares
     capacity: { type: Number, min: 0 }, // maximum number of fish the pond can hold
     imageUrl: { type: String },
+    // Registration documents: Memorandum of Agreement (required for new
+    // registrations) and Special Power of Attorney (optional).
+    moaUrl: { type: String },
+    moaName: { type: String },
+    spaUrl: { type: String },
+    spaName: { type: String },
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],

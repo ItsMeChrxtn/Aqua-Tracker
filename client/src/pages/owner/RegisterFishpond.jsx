@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from '../../utils/notify';
 import { fishpondApi } from '../../api/fishponds';
@@ -11,21 +11,59 @@ import { hectaresToSquareMeters } from '../../utils/format';
 import { FISHPOND_BARANGAYS } from '../../utils/barangays';
 import { MAX_AREA_HECTARES, MIN_AREA_HECTARES, MAX_CAPACITY } from '../../utils/limits';
 
+const DOCUMENT_ACCEPT = 'image/*,.pdf,.doc,.docx';
+const MAX_FILE_MB = 10;
+
+// Upload box for one file: shows an image preview, or the file name for a
+// PDF / Word document.
+function UploadBox({ label, required, hint, accept, file, onChange }) {
+  const preview = useMemo(() => (file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview]);
+  return (
+    <Field label={label} required={required} hint={hint}>
+      <label
+        className={`flex h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-2 text-center transition-colors ${
+          file ? 'border-brand-300 bg-brand-50/40 text-brand-700' : 'border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-500'
+        }`}
+      >
+        {preview ? (
+          <img src={preview} alt={label} className="h-20 max-w-full rounded-lg object-cover" />
+        ) : (
+          <Icon name={file ? 'clipboard' : 'image'} className="h-6 w-6" />
+        )}
+        <span className="line-clamp-2 break-all text-xs">{file ? file.name : 'Click to upload'}</span>
+        <input
+          type="file"
+          accept={accept}
+          className="hidden"
+          onChange={(e) => {
+            const picked = e.target.files[0] || null;
+            if (picked && picked.size > MAX_FILE_MB * 1024 * 1024) {
+              toast.error(`${picked.name} is larger than ${MAX_FILE_MB} MB`);
+              return;
+            }
+            onChange(picked);
+          }}
+        />
+      </label>
+    </Field>
+  );
+}
+
 export default function RegisterFishpond() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', barangay: '', address: '', areaHectares: '', capacity: '' });
   const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [moa, setMoa] = useState(null);
+  const [spa, setSpa] = useState(null);
   const [saving, setSaving] = useState(false);
-
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    setImage(file || null);
-    setPreview(file ? URL.createObjectURL(file) : null);
-  };
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!moa) {
+      toast.error('Please attach the MOA (Memorandum of Agreement) before submitting.');
+      return;
+    }
     setSaving(true);
     try {
       const formData = new FormData();
@@ -35,6 +73,8 @@ export default function RegisterFishpond() {
       if (form.areaHectares) formData.append('areaSize', hectaresToSquareMeters(form.areaHectares));
       if (form.capacity) formData.append('capacity', form.capacity);
       if (image) formData.append('image', image);
+      formData.append('moa', moa);
+      if (spa) formData.append('spa', spa);
 
       await fishpondApi.register(formData);
       toast.success('Fishpond registered — pending Agriculture Office approval.');
@@ -47,7 +87,7 @@ export default function RegisterFishpond() {
   };
 
   return (
-    <div className="mx-auto max-w-xl space-y-5">
+    <div className="mx-auto max-w-2xl space-y-5">
       <h2 className="text-lg font-semibold text-slate-900">Register Fishpond</h2>
       <Card>
         <form onSubmit={submit} className="space-y-4">
@@ -68,21 +108,14 @@ export default function RegisterFishpond() {
               <Input type="number" min="1" max={MAX_CAPACITY} step="1" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} placeholder="e.g. 5000" />
             </Field>
           </div>
-          <Field label="Fishpond Photo" hint="Optional — helps the Agriculture Office verify your registration">
-            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 py-6 text-slate-400 hover:border-brand-400 hover:text-brand-500">
-              {preview ? (
-                <img src={preview} alt="preview" className="h-24 rounded-lg object-cover" />
-              ) : (
-                <>
-                  <Icon name="image" className="h-6 w-6" />
-                  <span className="text-xs">Click to upload a photo</span>
-                </>
-              )}
-              <input type="file" accept="image/*" className="hidden" onChange={handleImage} />
-            </label>
-          </Field>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <UploadBox label="Fishpond Photo" hint="Optional" accept="image/*" file={image} onChange={setImage} />
+            <UploadBox label="MOA" required hint="Memorandum of Agreement — photo or PDF/Word" accept={DOCUMENT_ACCEPT} file={moa} onChange={setMoa} />
+            <UploadBox label="SPA" hint="Special Power of Attorney — optional" accept={DOCUMENT_ACCEPT} file={spa} onChange={setSpa} />
+          </div>
+          <p className="text-xs text-slate-400">These help the Agriculture Office verify your registration. You cannot submit without the MOA.</p>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="submit" loading={saving}>
+            <Button type="submit" loading={saving} disabled={!moa}>
               Submit for Approval
             </Button>
           </div>

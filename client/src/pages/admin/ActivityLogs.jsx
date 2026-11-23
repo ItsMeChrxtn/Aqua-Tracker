@@ -7,29 +7,45 @@ import { formatDateTime } from '../../utils/format';
 import IconButton from '../../components/ui/IconButton';
 
 const ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'APPROVE', 'REJECT', 'REGISTER', 'EXPORT'];
+const TARGETS = ['User', 'Fishpond', 'ProductionCycle', 'StockingRecord', 'FeedingRecord', 'MortalityRecord', 'GrowthRecord', 'HarvestRecord', 'SalesRecord', 'InventoryItem', 'Species', 'Report', 'SystemSetting'];
 
 export default function ActivityLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState('');
+  const [targetType, setTargetType] = useState('');
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
 
   useEffect(() => {
     setLoading(true);
     activityLogApi
-      .list({ action: action || undefined, page })
+      .list({ action: action || undefined, targetType: targetType || undefined, page })
       .then((res) => {
         setLogs(res.logs);
         setPages(res.pages);
       })
       .finally(() => setLoading(false));
-  }, [action, page]);
+  }, [action, targetType, page]);
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-slate-900">Activity Logs &amp; Audit Trail</h2>
+        <div className="flex flex-wrap items-center gap-3">
+        <Select
+          value={targetType}
+          onChange={(e) => {
+            setTargetType(e.target.value);
+            setPage(1);
+          }}
+          className="w-48"
+        >
+          <option value="">All targets</option>
+          {TARGETS.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </Select>
         <Select
           value={action}
           onChange={(e) => {
@@ -43,6 +59,7 @@ export default function ActivityLogs() {
             <option key={a} value={a}>{a}</option>
           ))}
         </Select>
+        </div>
       </div>
 
       <Card padded={false}>
@@ -57,6 +74,7 @@ export default function ActivityLogs() {
               { key: 'details', header: 'Details' },
             ]}
             rows={logs}
+            searchable="Search user, details…"
             emptyMessage="No activity recorded yet."
           />
         </div>

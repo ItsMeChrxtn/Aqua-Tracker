@@ -7,7 +7,12 @@ import { Field, Input, PasswordInput, BarangaySelect } from '../../components/ui
 import Button from '../../components/ui/Button';
 import Icon from '../../components/ui/Icon';
 import AuthBrandPanel from './AuthBrandPanel';
-import { PASSWORD_MIN, PASSWORD_MAX, PASSWORD_HINT } from '../../utils/limits';
+import { PASSWORD_MAX } from '../../utils/limits';
+import { isStrongPassword } from '../../utils/password';
+import PasswordChecklist from '../../components/ui/PasswordChecklist';
+import { FISHPOND_BARANGAYS } from '../../utils/barangays';
+
+const hasLetters = (value) => !/^[0-9+() -]*$/.test(value);
 
 const EMPTY = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', phone: '', barangay: '' };
 
@@ -28,8 +33,12 @@ export default function RegisterPage() {
       toast.error('Surname must not contain numbers');
       return false;
     }
-    if (form.phone && /[a-zA-Z]/.test(form.phone)) {
-      toast.error('Phone number must not contain letters');
+    if (form.phone && hasLetters(form.phone)) {
+      toast.error('Phone number must contain numbers only');
+      return false;
+    }
+    if (!isStrongPassword(form.password)) {
+      toast.error('Your password does not meet all the requirements yet');
       return false;
     }
     return true;
@@ -87,20 +96,21 @@ export default function RegisterPage() {
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Phone number">
-                <Input value={form.phone} onChange={update('phone')} placeholder="09171234567" />
+                <Input inputMode="tel" maxLength={13} value={form.phone} onChange={update('phone')} placeholder="09171234567" />
               </Field>
               <Field label="Barangay">
-                <BarangaySelect value={form.barangay} onChange={update('barangay')} options={['San Juan II', 'San Rafael III', 'San Rafael IV']} />
+                <BarangaySelect value={form.barangay} onChange={update('barangay')} options={FISHPOND_BARANGAYS} />
               </Field>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Password" required hint={PASSWORD_HINT}>
-                <PasswordInput required minLength={PASSWORD_MIN} maxLength={PASSWORD_MAX} value={form.password} onChange={update('password')} />
+              <Field label="Password" required>
+                <PasswordInput required maxLength={PASSWORD_MAX} value={form.password} onChange={update('password')} />
               </Field>
               <Field label="Confirm password" required>
                 <PasswordInput required value={form.confirmPassword} onChange={update('confirmPassword')} />
               </Field>
             </div>
+            <PasswordChecklist password={form.password} />
             <Button type="submit" loading={loading} className="w-full justify-center py-2.5">
               Create Account
             </Button>

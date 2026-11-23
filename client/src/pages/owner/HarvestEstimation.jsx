@@ -18,6 +18,7 @@ import Icon from '../../components/ui/Icon';
 import { Select, Field, Input, Textarea } from '../../components/ui/FormField';
 import LineTrendChart from '../../components/charts/LineTrendChart';
 import { formatDate, formatNumber, READINESS_LABEL, READINESS_BADGE_CLASS } from '../../utils/format';
+import { localTodayISO } from '../../utils/dates';
 
 const READINESS_COPY = {
   growing: 'Fish are still growing toward the recommended harvest weight. Keep monitoring!',
@@ -35,7 +36,7 @@ export default function HarvestEstimation() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [harvestModalOpen, setHarvestModalOpen] = useState(false);
-  const [harvestForm, setHarvestForm] = useState({ date: new Date().toISOString().slice(0, 10), actualQuantity: '', notes: '' });
+  const [harvestForm, setHarvestForm] = useState({ date: localTodayISO(), actualQuantity: '', notes: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -96,7 +97,7 @@ export default function HarvestEstimation() {
       const res = await harvestApi.logHarvest(cycleId, { ...harvestForm, actualQuantity: Number(harvestForm.actualQuantity) });
       toast.success(res.closed ? 'All remaining fish harvested — this batch is now closed.' : `Harvest logged. ${formatNumber(res.remaining)} fish remain in this batch.`);
       setHarvestModalOpen(false);
-      setHarvestForm({ date: new Date().toISOString().slice(0, 10), actualQuantity: '', notes: '' });
+      setHarvestForm({ date: localTodayISO(), actualQuantity: '', notes: '' });
       const list = await cycleApi.listForFishpond(fishpondId, { status: 'active' });
       setCycles(list);
       setCycleId(list.some((c) => c._id === cycleId) ? cycleId : list[0]?._id || '');

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { reportApi } from '../../api/misc';
+import { fisherfolkApi } from '../../api/fisherfolk';
 import { useAuth } from '../../auth/AuthContext';
 import Card from '../../components/ui/Card';
 import WelcomeBanner from '../../components/ui/WelcomeBanner';
@@ -40,9 +41,11 @@ export default function OwnerDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fishr, setFishr] = useState(undefined);
 
   useEffect(() => {
     reportApi.ownerSummary().then(setData).finally(() => setLoading(false));
+    fisherfolkApi.mine().then((a) => setFishr(a || null)).catch(() => {});
   }, []);
 
   if (loading) return <Spinner />;
@@ -65,6 +68,25 @@ export default function OwnerDashboard() {
           </>
         }
       />
+
+      {fishr !== undefined && (!fishr || ['draft', 'rejected'].includes(fishr.status)) && (
+        <Link
+          to="/owner/fisherfolk-registration"
+          className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition hover:shadow-md ${
+            fishr?.status === 'rejected' ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-amber-200 bg-amber-50 text-amber-800'
+          }`}
+        >
+          <Icon name={fishr?.status === 'rejected' ? 'warning' : 'approval'} className="h-5 w-5 shrink-0" />
+          <span className="flex-1">
+            {fishr?.status === 'rejected'
+              ? 'Your Fisherfolk Registration was returned for correction. Please update and resubmit it.'
+              : fishr
+                ? 'Your Fisherfolk Registration is still a draft. Finish and submit it to the Municipal Agriculture Office.'
+                : 'Please fill out your Application for Municipal Fisherfolk Registration (BFAR FishR).'}
+          </span>
+          <Icon name="arrowRight" className="h-4 w-4 shrink-0" />
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total Stocked Fish" value={formatNumber(summary.totalStocked)} icon="fish" tone="brand" />

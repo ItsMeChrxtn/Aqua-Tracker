@@ -9,6 +9,8 @@ import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import FishpondPhoto from '../../components/ui/FishpondPhoto';
 import { STATUS_BADGE_CLASS } from '../../utils/format';
+import { Select } from '../../components/ui/FormField';
+import { withExistingBarangays } from '../../utils/barangays';
 
 function groupByOwner(fishponds) {
   const byOwner = new Map();
@@ -31,6 +33,9 @@ export default function FishpondOwners() {
   const [loading, setLoading] = useState(true);
   const [ownerId, setOwnerId] = useState(null);
   const [deletingId, setDeletingId] = useState('');
+  const [barangay, setBarangay] = useState('');
+  const barangays = withExistingBarangays(owners.map((o) => o.barangay)).filter((b) => owners.some((o) => o.barangay === b));
+  const shownOwners = barangay ? owners.filter((o) => o.barangay === barangay) : owners;
 
   const load = () =>
     fishpondApi
@@ -65,7 +70,15 @@ export default function FishpondOwners() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-lg font-semibold text-slate-900">Fishpond Owners</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">Fishpond Owners</h2>
+        <Select value={barangay} onChange={(e) => setBarangay(e.target.value)} className="w-48">
+          <option value="">All barangays</option>
+          {barangays.map((b) => (
+            <option key={b} value={b}>{b}</option>
+          ))}
+        </Select>
+      </div>
       <Card padded={false}>
         <div className="p-2">
           <DataTable
@@ -92,7 +105,7 @@ export default function FishpondOwners() {
                 },
               },
             ]}
-            rows={owners}
+            rows={shownOwners}
             searchable="Search name, email, barangay…"
             emptyMessage="No fishpond owners have registered yet."
           />

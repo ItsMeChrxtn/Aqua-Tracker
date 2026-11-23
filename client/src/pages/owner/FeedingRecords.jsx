@@ -18,7 +18,7 @@ async function loadFeedOptions(fishpondId) {
 }
 
 const fields = [
-  { name: 'date', label: 'Date', type: 'date', required: true },
+  { name: 'date', label: 'Date', type: 'date', required: true, minToday: true, hint: 'Today or a later date' },
   {
     name: 'feedType',
     label: 'Feed Type',

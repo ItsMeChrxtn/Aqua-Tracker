@@ -5,6 +5,7 @@ export const NAV_CONFIG = {
     {
       section: 'Fishpond Management',
       items: [
+        { label: 'Fisherfolk Registration', to: '/owner/fisherfolk-registration', icon: 'approval' },
         { label: 'Fishpond List', to: '/owner/fishponds', icon: 'list' },
         { label: 'Inventory & Resources', to: '/owner/inventory', icon: 'clipboard' },
       ],
@@ -12,7 +13,6 @@ export const NAV_CONFIG = {
     {
       section: 'Monitoring',
       items: [
-        { label: 'Stocking Records', to: '/owner/monitoring/stocking', icon: 'fish' },
         { label: 'Feeding Records', to: '/owner/monitoring/feeding', icon: 'clipboard' },
         { label: 'Survival Monitoring', to: '/owner/monitoring/survival', icon: 'survival' },
       ],
@@ -38,6 +38,7 @@ export const NAV_CONFIG = {
       items: [
         { label: 'Fishponds', to: '/agri/fishponds', icon: 'list' },
         { label: 'Fishpond Owners', to: '/agri/owners', icon: 'users' },
+        { label: 'Fisherfolk Registration', to: '/agri/fisherfolk', icon: 'approval' },
         { label: 'Registered List', to: '/agri/registered-list', icon: 'clipboard' },
       ],
     },
