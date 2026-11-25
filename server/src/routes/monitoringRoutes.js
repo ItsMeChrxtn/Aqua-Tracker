@@ -7,6 +7,8 @@ const mortality = require('../controllers/mortalityController');
 const feeding = require('../controllers/feedingController');
 const sales = require('../controllers/salesController');
 const harvest = require('../controllers/harvestController');
+const waterQuality = require('../controllers/waterQualityController');
+const expenses = require('../controllers/expenseController');
 
 const router = express.Router();
 router.use(protect);
@@ -16,6 +18,7 @@ router.get('/fishponds/:fishpondId/cycles', cycleController.listCycles);
 router.post('/fishponds/:fishpondId/cycles', cycleController.createCycle);
 router.get('/fishponds/:fishpondId/capacity', cycleController.getCapacity);
 router.get('/cycles/:id', cycleController.getCycle);
+router.get('/cycles/:id/analytics', cycleController.getCycleAnalytics);
 router.put('/cycles/:id', cycleController.updateCycle);
 
 // Per-cycle record creation + listing (single batch/species)
@@ -35,6 +38,14 @@ router.get('/cycles/:cycleId/feeding', feeding.listByCycle);
 router.post('/cycles/:cycleId/feeding', feeding.create);
 router.delete('/feeding/:id', feeding.remove);
 
+router.get('/cycles/:cycleId/water-quality', waterQuality.listByCycle);
+router.post('/cycles/:cycleId/water-quality', waterQuality.create);
+router.delete('/water-quality/:id', waterQuality.remove);
+
+router.get('/cycles/:cycleId/expenses', expenses.listByCycle);
+router.post('/cycles/:cycleId/expenses', expenses.create);
+router.delete('/expenses/:id', expenses.remove);
+
 router.get('/cycles/:cycleId/sales', sales.listByCycle);
 router.post('/cycles/:cycleId/sales', sales.create);
 router.delete('/sales/:id', sales.remove);
@@ -46,6 +57,8 @@ router.get('/fishponds/:fishpondId/growth-records', growth.listByFishpond);
 router.get('/fishponds/:fishpondId/mortality-records', mortality.listByFishpond);
 router.get('/fishponds/:fishpondId/feeding-records', feeding.listByFishpond);
 router.get('/fishponds/:fishpondId/sales-records', sales.listByFishpond);
+router.get('/fishponds/:fishpondId/water-quality-records', waterQuality.listByFishpond);
+router.get('/fishponds/:fishpondId/expenses-records', expenses.listByFishpond);
 
 // Harvest estimation
 router.get('/cycles/:cycleId/harvest-estimate', harvest.getEstimate);

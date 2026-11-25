@@ -347,3 +347,10 @@ body {
   background: currentColor;
   opacity: 0.55;
 }
+
+/* Leaflet panes use z-index 400+; keep maps under modals, menus and the sidebar. */
+.leaflet-container {
+  isolation: isolate;
+  z-index: 0;
+  font: inherit;
+}

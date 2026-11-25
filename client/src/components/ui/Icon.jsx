@@ -6,6 +6,7 @@ import {
   ArrowRight, Loader2, Droplets, Waves, Package, CircleDollarSign, BarChart3,
   Landmark, Smartphone, ClipboardCheck, Sparkles, Quote, KeyRound, UserX, UserCheck,
   PackagePlus, PackageMinus, CheckCheck, ChevronLeft, ChevronRight, Mail, Eye, EyeOff,
+  Store, ShoppingCart, ShoppingBag, Phone, Truck,
 } from 'lucide-react';
 
 const REGISTRY = {
@@ -64,6 +65,11 @@ const REGISTRY = {
   mail: Mail,
   eye: Eye,
   eyeOff: EyeOff,
+  store: Store,
+  cart: ShoppingCart,
+  bag: ShoppingBag,
+  phone: Phone,
+  truck: Truck,
 };
 
 export default function Icon({ name, className = 'w-5 h-5', ...props }) {

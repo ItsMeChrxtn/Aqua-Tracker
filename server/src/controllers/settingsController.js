@@ -24,7 +24,7 @@ const updateSettings = asyncHandler(async (req, res) => {
   if (officeAddress !== undefined) settings.officeAddress = officeAddress;
 
   await settings.save();
-  await logActivity(req, { action: 'UPDATE', targetType: 'SystemSetting', targetId: settings._id, details: 'Updated system settings' });
+  await logActivity(req, { action: 'UPDATE', targetType: 'SystemSetting', targetId: settings._id, doc: settings, details: 'Updated system settings' });
 
   res.json({ success: true, settings });
 });

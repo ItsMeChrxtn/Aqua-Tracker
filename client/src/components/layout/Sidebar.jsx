@@ -2,10 +2,12 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { NAV_CONFIG } from '../../utils/navConfig';
 import Icon from '../ui/Icon';
+import { useT } from '../../i18n/useT';
 
 export default function Sidebar({ open, onClose }) {
   const { user, logout } = useAuth();
   const sections = NAV_CONFIG[user.role] || [];
+  const { t } = useT();
 
   return (
     <>
@@ -21,7 +23,7 @@ export default function Sidebar({ open, onClose }) {
           </div>
           <div>
             <p className="font-display text-[15px] font-semibold leading-tight text-slate-800">AquaTrack</p>
-            <p className="text-[11px] leading-tight text-slate-400">Aquaculture Monitoring System</p>
+            <p className="text-[11px] leading-tight text-slate-400">{t('Aquaculture Monitoring System')}</p>
           </div>
         </div>
 
@@ -30,7 +32,7 @@ export default function Sidebar({ open, onClose }) {
             <div key={section.section || idx}>
               {section.section && (
                 <p className="mb-1 px-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  {section.section}
+                  {t(section.section)}
                 </p>
               )}
               <div className="space-y-0.5">
@@ -49,7 +51,7 @@ export default function Sidebar({ open, onClose }) {
                     }
                   >
                     <Icon name={item.icon} className="h-4.5 w-4.5 shrink-0" />
-                    {item.label}
+                    {t(item.label)}
                   </NavLink>
                 ))}
               </div>
@@ -63,7 +65,7 @@ export default function Sidebar({ open, onClose }) {
             className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:bg-rose-50 hover:text-rose-600"
           >
             <Icon name="logout" className="h-4.5 w-4.5" />
-            Logout
+            {t('Logout')}
           </button>
         </div>
       </aside>

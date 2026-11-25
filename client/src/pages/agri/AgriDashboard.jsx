@@ -11,7 +11,7 @@ import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
 import LineTrendChart from '../../components/charts/LineTrendChart';
 import SpeciesPieChart from '../../components/charts/SpeciesPieChart';
-import { formatNumber, READINESS_LABEL, READINESS_BADGE_CLASS } from '../../utils/format';
+import { formatDate, formatNumber, READINESS_LABEL, READINESS_BADGE_CLASS } from '../../utils/format';
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -32,9 +32,11 @@ export default function AgriDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [followUps, setFollowUps] = useState(null);
 
   useEffect(() => {
     reportApi.municipalSummary().then(setData).finally(() => setLoading(false));
+    reportApi.staffInsights().then(setFollowUps).catch(() => setFollowUps([]));
   }, []);
 
   if (loading) return <Spinner />;
@@ -56,6 +58,25 @@ export default function AgriDashboard() {
         <StatCard label="Fishponds with High Mortality" value={formatNumber(summary.fishpondsHighMortalityCount)} icon="mortality" tone="rose" />
         <StatCard label="Fishponds Near Harvest" value={formatNumber(summary.fishpondsNearHarvestCount)} icon="clock" tone="violet" />
       </div>
+
+      <Card title="Fishponds to Follow Up" subtitle="Active cycles with no recent records, high mortality, slow growth or ready for harvest" padded={false}>
+        <div className="p-2">
+          <DataTable
+            columns={[
+              { key: 'fishpondName', header: 'Fishpond', render: (r) => <div><p className="font-medium text-slate-900">{r.fishpondName}</p><p className="text-[11px] text-slate-500">{r.barangay}</p></div> },
+              { key: 'owner', header: 'Owner', render: (r) => <div><p>{r.owner || '—'}</p>{r.ownerPhone && <p className="text-[11px] text-slate-500">{r.ownerPhone}</p>}</div> },
+              { key: 'cycle', header: 'Cycle', render: (r) => `${r.cycle || '—'} · ${r.species || ''}` },
+              { key: 'reasons', header: 'Why', render: (r) => <div className="flex flex-wrap gap-1">{r.reasons.map((x) => <Badge key={x} className={x === 'Ready for harvest' ? 'bg-leaf-50 text-leaf-700 border-leaf-300' : 'bg-amber-50 text-amber-700 border-amber-300'}>{x}</Badge>)}</div>, value: (r) => r.reasons.join(' ') },
+              { key: 'lastRecordDate', header: 'Last Record', render: (r) => (r.lastRecordDate ? formatDate(r.lastRecordDate) : 'None yet') },
+            ]}
+            rows={followUps || []}
+            keyField="cycleId"
+            loading={followUps === null}
+            pageSize={5}
+            emptyMessage="No fishpond needs a follow-up right now."
+          />
+        </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card title="Estimated Harvest per Month (kg)">

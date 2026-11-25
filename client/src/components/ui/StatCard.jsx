@@ -1,4 +1,5 @@
 import Icon from './Icon';
+import { useT } from '../../i18n/useT';
 
 const TONE = {
   brand: 'from-brand-400 to-brand-600',
@@ -11,13 +12,14 @@ const TONE = {
 
 export default function StatCard({ label, value, sub, icon, tone = 'brand' }) {
   const t = TONE[tone] || TONE.brand;
+  const { t: tr } = useT();
   return (
     <div className="hover-lift rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10.5px] font-bold uppercase leading-snug tracking-wide text-slate-600">{label}</p>
+          <p className="text-[10.5px] font-bold uppercase leading-snug tracking-wide text-slate-600">{tr(label)}</p>
           <p className="font-display mt-1.5 text-2xl font-medium leading-none tracking-tight text-slate-900">{value}</p>
-          {sub && <p className="mt-1.5 text-xs text-slate-600">{sub}</p>}
+          {sub && <p className="mt-1.5 text-xs text-slate-600">{tr(sub)}</p>}
         </div>
         {icon && (
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${t} text-white shadow-sm`}>

@@ -5,6 +5,7 @@ const { logActivity } = require('../utils/activityLog');
 const { createNotification } = require('../utils/notify');
 const { assertValidPhone, todayInManila } = require('../utils/validation');
 const { writeApplicationPdf } = require('../utils/fisherfolkPdf');
+const { newVerifyCode, ensureVerifyCode, qrPng, verifyUrl } = require('../utils/verification');
 
 const { SOURCE_TYPES } = FisherfolkApplication;
 const STAFF = ['agriculture_staff', 'admin'];
@@ -142,7 +143,7 @@ async function findForUser(req, id) {
 
 // GET /api/fisherfolk/me
 const getMine = asyncHandler(async (req, res) => {
-  const application = await FisherfolkApplication.findOne({ owner: req.user._id });
+  const application = await ensureVerifyCode(await FisherfolkApplication.findOne({ owner: req.user._id }));
   res.json({ success: true, application });
 });
 
@@ -205,7 +206,7 @@ const listApplications = asyncHandler(async (req, res) => {
 });
 
 const getApplication = asyncHandler(async (req, res) => {
-  const application = await findForUser(req, req.params.id);
+  const application = await ensureVerifyCode(await findForUser(req, req.params.id));
   res.json({ success: true, application });
 });
 
@@ -233,6 +234,7 @@ const approveApplication = asyncHandler(async (req, res) => {
   }
 
   app.status = 'approved';
+  app.verifyCode = app.verifyCode || newVerifyCode();
   app.registrationNo = registrationNo;
   app.registrationDate = date(req.body.registrationDate) || new Date();
   app.reviewedBy = text(req.body.reviewedBy);
@@ -277,21 +279,23 @@ const rejectApplication = asyncHandler(async (req, res) => {
   res.json({ success: true, application: app });
 });
 
-function sendPdf(res, app) {
+async function sendPdf(res, app) {
+  await ensureVerifyCode(app);
+  const qr = app.status === 'approved' && app.verifyCode ? { png: await qrPng(app.verifyCode), url: verifyUrl(app.verifyCode) } : null;
   const name = [app.lastName, app.firstName].filter(Boolean).join('_').replace(/[^\w-]+/g, '_') || 'application';
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="FishR_Application_${name}.pdf"`);
-  writeApplicationPdf(app, res);
+  writeApplicationPdf(app, res, { qr });
 }
 
 const myPdf = asyncHandler(async (req, res) => {
   const app = await FisherfolkApplication.findOne({ owner: req.user._id });
   if (!app) throw new ApiError(404, 'You have not started your application yet');
-  sendPdf(res, app);
+  await sendPdf(res, app);
 });
 
 const applicationPdf = asyncHandler(async (req, res) => {
-  sendPdf(res, await findForUser(req, req.params.id));
+  await sendPdf(res, await findForUser(req, req.params.id));
 });
 
 module.exports = {

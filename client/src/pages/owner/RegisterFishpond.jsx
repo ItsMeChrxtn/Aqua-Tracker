@@ -7,6 +7,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { Field, Input, BarangaySelect } from '../../components/ui/FormField';
 import Icon from '../../components/ui/Icon';
+import LocationPicker from '../../components/map/LocationPicker';
 import { hectaresToSquareMeters } from '../../utils/format';
 import { FISHPOND_BARANGAYS } from '../../utils/barangays';
 import { MAX_AREA_HECTARES, MIN_AREA_HECTARES, MAX_CAPACITY } from '../../utils/limits';
@@ -56,6 +57,10 @@ export default function RegisterFishpond() {
   const [image, setImage] = useState(null);
   const [moa, setMoa] = useState(null);
   const [spa, setSpa] = useState(null);
+  const [location, setLocation] = useState(null);
+  // Bumped when the address is finished, so the map pins it automatically.
+  const [locateKey, setLocateKey] = useState(0);
+  const relocate = () => setLocateKey((k) => k + 1);
   const [saving, setSaving] = useState(false);
 
   const submit = async (e) => {
@@ -75,6 +80,10 @@ export default function RegisterFishpond() {
       if (image) formData.append('image', image);
       formData.append('moa', moa);
       if (spa) formData.append('spa', spa);
+      if (location) {
+        formData.append('lat', location.lat);
+        formData.append('lng', location.lng);
+      }
 
       await fishpondApi.register(formData);
       toast.success('Fishpond registered — pending Agriculture Office approval.');
@@ -95,10 +104,27 @@ export default function RegisterFishpond() {
             <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. JDC Tilapia Farm" />
           </Field>
           <Field label="Barangay" required>
-            <BarangaySelect required options={FISHPOND_BARANGAYS} value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
+            <BarangaySelect
+              required
+              options={FISHPOND_BARANGAYS}
+              value={form.barangay}
+              onChange={(e) => {
+                setForm({ ...form, barangay: e.target.value });
+                relocate();
+              }}
+            />
           </Field>
           <Field label="Address" required hint="Street, sitio, or landmark of the fishpond">
-            <Input required value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="e.g. Purok 3, near the barangay hall" />
+            <Input
+              required
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              onBlur={relocate}
+              placeholder="e.g. 123 Magdiwang St., Purok 3"
+            />
+          </Field>
+          <Field label="Location on Map" hint="Placed automatically from the address; click the map to move the pin to the exact spot">
+            <LocationPicker value={location} onChange={setLocation} address={form.address} barangay={form.barangay} locateKey={locateKey} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Area Size (hectares)" hint={`Up to ${MAX_AREA_HECTARES} hectares`}>

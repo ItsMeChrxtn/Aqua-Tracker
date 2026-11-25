@@ -61,4 +61,5 @@ export const ROLE_LABEL = {
   fishpond_owner: 'Fishpond Owner',
   agriculture_staff: 'Agriculture Office Staff',
   admin: 'Administrator',
+  buyer: 'Buyer',
 };

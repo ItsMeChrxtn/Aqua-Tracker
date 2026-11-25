@@ -15,7 +15,10 @@ const hasLetters = (value) => !/^[0-9+() -]*$/.test(value);
 
 export default function ProfileSettings() {
   const { user, refreshUser } = useAuth();
-  const [form, setForm] = useState({ name: user.name, phone: user.phone || '', barangay: user.barangay || '' });
+  const isBuyer = user.role === 'buyer';
+  const [form, setForm] = useState(
+    isBuyer ? { name: user.name, phone: user.phone || '', address: user.address || '' } : { name: user.name, phone: user.phone || '', barangay: user.barangay || '' }
+  );
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [pw, setPw] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -77,10 +80,17 @@ export default function ProfileSettings() {
             <Field label="Phone">
               <Input inputMode="tel" maxLength={13} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="09171234567" />
             </Field>
-            <Field label="Barangay">
-              <BarangaySelect options={FISHPOND_BARANGAYS} value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
-            </Field>
+            {!isBuyer && (
+              <Field label="Barangay">
+                <BarangaySelect options={FISHPOND_BARANGAYS} value={form.barangay} onChange={(e) => setForm({ ...form, barangay: e.target.value })} />
+              </Field>
+            )}
           </div>
+          {isBuyer && (
+            <Field label="Delivery Address" hint="Used when you order for delivery">
+              <Input value={form.address} maxLength={200} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="House no., street, barangay, municipality" />
+            </Field>
+          )}
           <div className="flex justify-end">
             <Button type="submit" loading={savingProfile}>Save Changes</Button>
           </div>

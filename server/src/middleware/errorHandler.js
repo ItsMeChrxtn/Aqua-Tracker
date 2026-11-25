@@ -44,12 +44,16 @@ function errorHandler(err, req, res, next) {
     message = 'Not authorized, invalid or expired token';
   }
 
+  if (statusCode >= 500) console.error(err);
+
+  // Stack traces only when explicitly running in development, so a server
+  // deployed without NODE_ENV does not reveal its code paths.
   res.status(statusCode).json({
     success: false,
     message,
     code: err.errorCode,
     ...err.extra,
-    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 }
 

@@ -13,6 +13,8 @@ import Spinner from '../../components/ui/Spinner';
 import EmptyState from '../../components/ui/EmptyState';
 import Icon from '../../components/ui/Icon';
 import LineTrendChart from '../../components/charts/LineTrendChart';
+import InsightsPanel from '../../components/insights/InsightsPanel';
+import { useT } from '../../i18n/useT';
 import { formatDate, formatDateTime, formatNumber, READINESS_LABEL, READINESS_BADGE_CLASS } from '../../utils/format';
 
 const STATUS_RING = {
@@ -39,13 +41,16 @@ const ACTION_TONE = {
 
 export default function OwnerDashboard() {
   const { user } = useAuth();
+  const { t } = useT();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fishr, setFishr] = useState(undefined);
+  const [insights, setInsights] = useState(null);
 
   useEffect(() => {
     reportApi.ownerSummary().then(setData).finally(() => setLoading(false));
     fisherfolkApi.mine().then((a) => setFishr(a || null)).catch(() => {});
+    reportApi.ownerInsights().then(setInsights).catch(() => setInsights([]));
   }, []);
 
   if (loading) return <Spinner />;
@@ -87,6 +92,8 @@ export default function OwnerDashboard() {
           <Icon name="arrowRight" className="h-4 w-4 shrink-0" />
         </Link>
       )}
+
+      <InsightsPanel insights={insights} loading={insights === null} />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total Stocked Fish" value={formatNumber(summary.totalStocked)} icon="fish" tone="brand" />
@@ -193,7 +200,7 @@ export default function OwnerDashboard() {
                 <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${tone.icon}`}>
                   <Icon name={a.icon} className="h-4.5 w-4.5" />
                 </span>
-                <span className="text-xs font-medium leading-snug text-slate-700">{a.label}</span>
+                <span className="text-xs font-medium leading-snug text-slate-700">{t(a.label)}</span>
               </Link>
             );
           })}

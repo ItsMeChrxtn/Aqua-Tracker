@@ -6,6 +6,7 @@ const { ApiError } = require('../middleware/errorHandler');
 const { loadFishpondWithAccess, loadCycleWithAccess } = require('../utils/access');
 const { logActivity } = require('../utils/activityLog');
 const { computeHarvestEstimate } = require('../utils/calculations');
+const { computeCycleAnalytics } = require('../utils/analytics');
 const { assertWithinCapacity, getPondFishCount } = require('../utils/capacity');
 const { assertNotPastDate, dateOnly } = require('../utils/validation');
 
@@ -96,8 +97,16 @@ const updateCycle = asyncHandler(async (req, res) => {
     cycle.status = status;
   }
   await cycle.save();
-  await logActivity(req, { action: 'UPDATE', targetType: 'ProductionCycle', targetId: cycle._id, details: 'Updated production cycle' });
+  await logActivity(req, { action: 'UPDATE', targetType: 'ProductionCycle', targetId: cycle._id, doc: cycle, details: 'Updated production cycle' });
   res.json({ success: true, cycle });
+});
+
+// GET /api/cycles/:id/analytics — growth rates, FCR, feeding guide, harvest
+// projection and the cycle summary
+const getCycleAnalytics = asyncHandler(async (req, res) => {
+  const cycle = await loadCycleWithAccess(req.user, req.params.id);
+  if (!cycle.species?.name) await cycle.populate('species');
+  res.json({ success: true, analytics: await computeCycleAnalytics(cycle) });
 });
 
 // GET /api/fishponds/:fishpondId/capacity — how many more fish fit
@@ -112,4 +121,4 @@ const getCapacity = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { listCycles, createCycle, getCycle, updateCycle, getCapacity };
+module.exports = { listCycles, createCycle, getCycle, updateCycle, getCapacity, getCycleAnalytics };

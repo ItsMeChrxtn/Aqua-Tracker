@@ -14,6 +14,9 @@ import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
 import { Field, Input, Select } from '../../components/ui/FormField';
 import BatchDetailsModal from '../../components/monitoring/BatchDetailsModal';
+import VerificationQr from '../../components/ui/VerificationQr';
+import LocationPicker from '../../components/map/LocationPicker';
+import FishpondMap from '../../components/map/FishpondMap';
 import RecordFormModal from '../../components/monitoring/RecordFormModal';
 import { localTodayISO, nextDayISO, harvestMonthsLabel } from '../../utils/dates';
 import { formatArea, formatCapacity, formatDate, formatNumber, STATUS_BADGE_CLASS, WATER_TYPE_LABEL } from '../../utils/format';
@@ -57,6 +60,10 @@ export default function FishpondDetail() {
   const [viewingCycle, setViewingCycle] = useState(null);
   const [stockModalOpen, setStockModalOpen] = useState(false);
   const [batchFilter, setBatchFilter] = useState('');
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pin, setPin] = useState(null);
+  const [pinLocateKey, setPinLocateKey] = useState(0);
+  const [savingPin, setSavingPin] = useState(false);
 
   const loadStocking = () => stockingApi.listForFishpond(id).then((res) => setStocking(res.records));
 
@@ -116,6 +123,31 @@ export default function FishpondDetail() {
     }
   };
 
+  const openPin = () => {
+    const hasPin = fishpond.location?.lat !== undefined;
+    setPin(hasPin ? fishpond.location : null);
+    // No pin yet: find it from the registered address right away.
+    setPinLocateKey(hasPin ? 0 : Date.now());
+    setPinOpen(true);
+  };
+
+  const savePin = async () => {
+    setSavingPin(true);
+    try {
+      const data = new FormData();
+      data.append('lat', pin ? pin.lat : '');
+      data.append('lng', pin ? pin.lng : '');
+      const updated = await fishpondApi.update(id, data);
+      setFishpond((f) => ({ ...f, location: updated.location }));
+      toast.success(pin ? 'Location saved' : 'Pin removed');
+      setPinOpen(false);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Failed to save location'));
+    } finally {
+      setSavingPin(false);
+    }
+  };
+
   const removeStocking = async (record) => {
     if (!(await confirm('Delete this stocking record?'))) return;
     try {
@@ -145,11 +177,16 @@ export default function FishpondDetail() {
             <Icon name="location" className="h-4 w-4" /> {fishpond.address ? `${fishpond.address}, ` : ''}{fishpond.barangay} · {formatArea(fishpond.areaSize, 'Area not set')} · {formatCapacity(fishpond.capacity, 'Capacity not set')}
           </p>
         </div>
-        {fishpond.imageUrl && (
-          <Button size="sm" variant="secondary" icon="image" onClick={() => setImageViewerOpen(true)}>
-            View Photo
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="secondary" icon="location" onClick={openPin}>
+            {fishpond.location?.lat !== undefined ? 'Change Location' : 'Set Location'}
           </Button>
-        )}
+          {fishpond.imageUrl && (
+            <Button size="sm" variant="secondary" icon="image" onClick={() => setImageViewerOpen(true)}>
+              View Photo
+            </Button>
+          )}
+        </div>
       </div>
 
       {fishpond.status !== 'approved' && (
@@ -164,6 +201,10 @@ export default function FishpondDetail() {
 
       {fishpond.status === 'approved' && (
         <>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {fishpond.verifyCode && <VerificationQr code={fishpond.verifyCode} label="Fishpond registration QR" fileName={`fishpond-${fishpond.name}`} />}
+            {fishpond.location?.lat !== undefined && <FishpondMap fishponds={[fishpond]} height={160} />}
+          </div>
           <Card
             title="Production Cycles"
             action={
@@ -342,6 +383,23 @@ export default function FishpondDetail() {
         activeCycles={activeCycles}
         onSaved={loadStocking}
       />
+
+      <Modal open={pinOpen} onClose={() => setPinOpen(false)} title={`Location — ${fishpond.name}`} width="max-w-2xl">
+        <div className="space-y-4">
+          <p className="text-xs text-slate-600">
+            Address on record: <span className="font-semibold">{[fishpond.address, fishpond.barangay, 'Noveleta, Cavite'].filter(Boolean).join(', ')}</span>
+          </p>
+          <LocationPicker value={pin} onChange={setPin} height={360} address={fishpond.address} barangay={fishpond.barangay} locateKey={pinLocateKey} />
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setPinOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" loading={savingPin} onClick={savePin}>
+              Save Location
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <BatchDetailsModal cycle={viewingCycle} fishpond={fishpond} onClose={() => setViewingCycle(null)} />
 

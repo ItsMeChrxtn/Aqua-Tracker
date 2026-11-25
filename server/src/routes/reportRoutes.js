@@ -2,11 +2,14 @@ const express = require('express');
 const { protect, authorize } = require('../middleware/auth');
 const { ownerSummary, municipalSummary, adminSummary } = require('../controllers/reportController');
 const { exportExcel, exportPdf } = require('../controllers/exportController');
+const { ownerInsights, staffInsights } = require('../controllers/insightController');
 
 const router = express.Router();
 router.use(protect);
 
 router.get('/owner-summary', authorize('fishpond_owner'), ownerSummary);
+router.get('/owner-insights', authorize('fishpond_owner'), ownerInsights);
+router.get('/staff-insights', authorize('agriculture_staff', 'admin'), staffInsights);
 router.get('/municipal-summary', authorize('agriculture_staff', 'admin'), municipalSummary);
 router.get('/admin-summary', authorize('admin'), adminSummary);
 router.get('/export/excel', exportExcel);

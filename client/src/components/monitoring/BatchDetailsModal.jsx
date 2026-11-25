@@ -21,20 +21,26 @@ function InfoRow({ label, children }) {
 // photo, the current growth estimate and remarks.
 export default function BatchDetailsModal({ cycle, fishpond, onClose }) {
   const [estimate, setEstimate] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!cycle) return;
     setEstimate(null);
+    setAnalytics(null);
     setLoading(true);
-    cycleApi
-      .get(cycle._id)
-      .then((res) => setEstimate(res.estimate))
+    Promise.all([cycleApi.get(cycle._id), cycleApi.analytics(cycle._id).catch(() => null)])
+      .then(([res, stats]) => {
+        setEstimate(res.estimate);
+        setAnalytics(stats);
+      })
       .catch(() => setEstimate(null))
       .finally(() => setLoading(false));
   }, [cycle]);
 
   const months = cycle ? harvestMonthsLabel(cycle.stockingDate, cycle.expectedHarvestDate) : '';
+
+  const sum = analytics?.summary;
 
   return (
     <Modal open={!!cycle} onClose={onClose} title="Batch Details" width="max-w-3xl">
@@ -92,6 +98,34 @@ export default function BatchDetailsModal({ cycle, fishpond, onClose }) {
               </div>
             </div>
           </div>
+
+          {sum && (
+            <div className="rounded-xl border border-slate-200 p-4">
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <Icon name="report" className="h-4 w-4 text-brand-600" /> {sum.status === 'active' ? 'Cycle Report So Far' : 'Cycle Summary'}
+              </p>
+              <div className="grid gap-x-6 sm:grid-cols-2">
+                <div className="divide-y divide-slate-100">
+                  <InfoRow label="Days of Culture">{formatNumber(sum.daysOfCulture)} days</InfoRow>
+                  <InfoRow label="Fish Stocked">{formatNumber(sum.totalStocked)}</InfoRow>
+                  <InfoRow label="Fish Lost">{formatNumber(sum.totalMortality)}</InfoRow>
+                  <InfoRow label="Survival Rate">{formatNumber(sum.survivalRate, 1)}%</InfoRow>
+                  <InfoRow label="Fish Harvested">{formatNumber(sum.harvestedCount)} ({formatNumber(sum.harvestedKg, 1)} kg)</InfoRow>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  <InfoRow label="Avg. Harvest Weight">{sum.averageHarvestWeight ? `${formatNumber(sum.averageHarvestWeight, 1)} g` : '—'}</InfoRow>
+                  <InfoRow label="Feed Used">{formatNumber(analytics.feeding.totalFeedKg, 1)} kg</InfoRow>
+                  <InfoRow label="Feed Conversion (FCR)">{analytics.feeding.fcr ? formatNumber(analytics.feeding.fcr, 2) : '—'}</InfoRow>
+                  <InfoRow label="Avg. Daily Gain">{analytics.growth.adg !== null ? `${formatNumber(analytics.growth.adg, 2)} g/day` : '—'}</InfoRow>
+                  <InfoRow label="Sales">₱{formatNumber(sum.salesRevenue, 2)} ({formatNumber(sum.soldKg, 1)} kg)</InfoRow>
+                  <InfoRow label="Expenses">₱{formatNumber(analytics.finance.totalExpenses, 2)}</InfoRow>
+                  <InfoRow label={analytics.finance.netIncome >= 0 ? 'Net Income' : 'Net Loss'}>
+                    <span className={analytics.finance.netIncome >= 0 ? 'text-leaf-700' : 'text-rose-600'}>₱{formatNumber(analytics.finance.netIncome, 2)}</span>
+                  </InfoRow>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </Modal>

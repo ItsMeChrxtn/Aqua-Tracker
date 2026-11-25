@@ -7,6 +7,8 @@ const activityLogSchema = new mongoose.Schema(
     targetType: { type: String, required: true }, // e.g. "Fishpond", "MortalityRecord"
     targetId: { type: mongoose.Schema.Types.ObjectId },
     details: { type: String, trim: true },
+    // For edits: each changed field with its old and new value.
+    changes: [{ _id: false, field: String, from: String, to: String }],
     ip: { type: String },
   },
   { timestamps: true }

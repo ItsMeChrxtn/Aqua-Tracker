@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
+import LanguageProvider from './i18n/LanguageProvider';
 import ProtectedRoute from './auth/ProtectedRoute';
 import DashboardLayout from './components/layout/DashboardLayout';
 import { ROLE_HOME } from './utils/navConfig';
@@ -10,12 +11,15 @@ import RegisterPage from './pages/auth/RegisterPage';
 import VerifyEmailPage from './pages/auth/VerifyEmailPage';
 import ChangePasswordRequired from './pages/auth/ChangePasswordRequired';
 import NotFound from './pages/NotFound';
+import VerifyPage from './pages/VerifyPage';
 
 import OwnerDashboard from './pages/owner/OwnerDashboard';
 import FishpondList from './pages/owner/FishpondList';
 import RegisterFishpond from './pages/owner/RegisterFishpond';
 import FishpondDetail from './pages/owner/FishpondDetail';
 import FeedingRecords from './pages/owner/FeedingRecords';
+import WaterQuality from './pages/owner/WaterQuality';
+import Expenses from './pages/owner/Expenses';
 import SurvivalMonitoring from './pages/owner/SurvivalMonitoring';
 import HarvestEstimation from './pages/owner/HarvestEstimation';
 import SalesRecords from './pages/owner/SalesRecords';
@@ -23,6 +27,11 @@ import InventoryManagement from './pages/owner/InventoryManagement';
 import OwnerReports from './pages/owner/Reports';
 import ProfileSettings from './pages/owner/ProfileSettings';
 import FisherfolkRegistration from './pages/owner/FisherfolkRegistration';
+import ProductManagement from './pages/owner/ProductManagement';
+import OwnerOrders from './pages/owner/OwnerOrders';
+
+import Marketplace from './pages/buyer/Marketplace';
+import MyOrders from './pages/buyer/MyOrders';
 
 import AgriDashboard from './pages/agri/AgriDashboard';
 import FishpondsApproval from './pages/agri/FishpondsApproval';
@@ -52,11 +61,13 @@ function Home() {
 export default function App() {
   return (
     <BrowserRouter>
+      <LanguageProvider>
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/verify/:code" element={<VerifyPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/change-password" element={<ChangePasswordRequired />} />
           </Route>
@@ -73,12 +84,25 @@ export default function App() {
               {/* Stocking records now live on each fishpond's page. */}
               <Route path="monitoring/stocking" element={<Navigate to="/owner/fishponds" replace />} />
               <Route path="monitoring/feeding" element={<FeedingRecords />} />
+              <Route path="monitoring/water-quality" element={<WaterQuality />} />
               <Route path="monitoring/mortality" element={<Navigate to="/owner/monitoring/survival?add=mortality" replace />} />
               <Route path="monitoring/growth" element={<Navigate to="/owner/monitoring/survival?add=growth" replace />} />
               <Route path="monitoring/survival" element={<SurvivalMonitoring />} />
               <Route path="monitoring/sales" element={<SalesRecords />} />
+              <Route path="expenses" element={<Expenses />} />
               <Route path="harvest-estimation" element={<HarvestEstimation />} />
               <Route path="reports" element={<OwnerReports />} />
+              <Route path="products" element={<ProductManagement />} />
+              <Route path="orders" element={<OwnerOrders />} />
+              <Route path="settings/profile" element={<ProfileSettings />} />
+            </Route>
+          </Route>
+
+          <Route element={<ProtectedRoute roles={['buyer']} />}>
+            <Route path="/buyer" element={<DashboardLayout />}>
+              <Route index element={<Navigate to="/buyer/marketplace" replace />} />
+              <Route path="marketplace" element={<Marketplace />} />
+              <Route path="orders" element={<MyOrders />} />
               <Route path="settings/profile" element={<ProfileSettings />} />
             </Route>
           </Route>
@@ -112,6 +136,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
+      </LanguageProvider>
     </BrowserRouter>
   );
 }

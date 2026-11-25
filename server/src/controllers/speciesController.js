@@ -78,7 +78,7 @@ const updateSpecies = asyncHandler(async (req, res) => {
   if (isActive !== undefined) species.isActive = isActive;
 
   await species.save();
-  await logActivity(req, { action: 'UPDATE', targetType: 'Species', targetId: species._id, details: `Updated species ${species.name}` });
+  await logActivity(req, { action: 'UPDATE', targetType: 'Species', targetId: species._id, doc: species, details: `Updated species ${species.name}` });
 
   res.json({ success: true, species });
 });

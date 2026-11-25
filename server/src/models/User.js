@@ -8,11 +8,12 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true },
     role: {
       type: String,
-      enum: ['fishpond_owner', 'agriculture_staff', 'admin'],
+      enum: ['fishpond_owner', 'agriculture_staff', 'admin', 'buyer'],
       default: 'fishpond_owner',
     },
     phone: { type: String, trim: true },
     barangay: { type: String, trim: true },
+    address: { type: String, trim: true }, // buyers: where orders are delivered
     status: { type: String, enum: ['active', 'inactive'], default: 'active' },
     // Self-registered owners must confirm their email with an OTP. Accounts
     // created before this field existed have it unset and count as verified.

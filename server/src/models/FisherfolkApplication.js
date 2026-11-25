@@ -101,6 +101,8 @@ const applicationSchema = new mongoose.Schema(
     // 5. For authorized personnel only
     submittedAt: { type: Date },
     registrationNo: { type: String, trim: true },
+    // Code behind the public QR verification link (set once approved).
+    verifyCode: { type: String, unique: true, sparse: true },
     registrationDate: { type: Date },
     reviewedBy: { type: String, trim: true }, // MFARMC Chairman
     certifiedBy: { type: String, trim: true }, // MFARMC Coordinator

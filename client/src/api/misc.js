@@ -11,6 +11,8 @@ export const userApi = {
 
 export const reportApi = {
   ownerSummary: () => client.get('/reports/owner-summary').then((r) => r.data),
+  ownerInsights: () => client.get('/reports/owner-insights').then((r) => r.data.insights),
+  staffInsights: () => client.get('/reports/staff-insights').then((r) => r.data.followUps),
   municipalSummary: (params) => client.get('/reports/municipal-summary', { params }).then((r) => r.data),
   adminSummary: () => client.get('/reports/admin-summary').then((r) => r.data),
   exportExcelUrl: () => '/reports/export/excel',

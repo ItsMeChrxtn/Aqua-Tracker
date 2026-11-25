@@ -17,6 +17,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Icon from '../../components/ui/Icon';
 import { Select, Field, Input, Textarea } from '../../components/ui/FormField';
 import LineTrendChart from '../../components/charts/LineTrendChart';
+import CycleAnalyticsPanel from '../../components/monitoring/CycleAnalyticsPanel';
 import { formatDate, formatNumber, READINESS_LABEL, READINESS_BADGE_CLASS } from '../../utils/format';
 import { localTodayISO } from '../../utils/dates';
 
@@ -32,6 +33,7 @@ export default function HarvestEstimation() {
   const [cycles, setCycles] = useState([]);
   const [cycleId, setCycleId] = useState('');
   const [estimate, setEstimate] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [history, setHistory] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -58,6 +60,7 @@ export default function HarvestEstimation() {
   useEffect(() => {
     if (!cycleId) {
       setEstimate(null);
+      setAnalytics(null);
       setHistory([]);
       return;
     }
@@ -66,9 +69,11 @@ export default function HarvestEstimation() {
     Promise.all([
       harvestApi.getEstimate(cycleId),
       harvestApi.history(fishpondId, cycle?.species?._id ? { speciesId: cycle.species._id } : undefined),
+      cycleApi.analytics(cycleId).catch(() => null),
     ])
-      .then(([est, logs]) => {
+      .then(([est, logs, stats]) => {
         setEstimate(est);
+        setAnalytics(stats);
         setHistory([...logs].reverse());
       })
       .finally(() => setLoading(false));
@@ -176,6 +181,8 @@ export default function HarvestEstimation() {
               </div>
             </Card>
           </div>
+
+          <CycleAnalyticsPanel analytics={analytics} />
 
           <Card title="Estimated Harvest Trend (kg)">
             <LineTrendChart data={harvestTrend} series={[{ key: 'estimatedHarvestKg', label: 'Est. Harvest (kg)' }]} valueFormatter={(v) => `${v} kg`} />

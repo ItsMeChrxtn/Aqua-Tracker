@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Icon from './Icon';
+import { useT } from '../../i18n/useT';
 
 const PAGE_SIZE = 10;
 
@@ -38,6 +39,7 @@ export default function DataTable({
   query: controlledQuery,
   onQueryChange,
 }) {
+  const { t, lang } = useT();
   const [ownQuery, setOwnQuery] = useState('');
   const query = controlledQuery ?? ownQuery;
   const setQuery = onQueryChange || setOwnQuery;
@@ -83,7 +85,7 @@ export default function DataTable({
           setQuery(e.target.value);
           setPage(1);
         }}
-        placeholder={typeof searchable === 'string' ? searchable : 'Search…'}
+        placeholder={t(typeof searchable === 'string' ? searchable : 'Search…')}
         className="block w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
         aria-label="Search table"
       />
@@ -93,13 +95,13 @@ export default function DataTable({
   if (loading) {
     return (
       <div className="flex items-center justify-center gap-2 py-14 text-sm text-slate-400">
-        <Icon name="spinner" className="h-4 w-4 animate-spin" /> Loading…
+        <Icon name="spinner" className="h-4 w-4 animate-spin" /> {lang === 'fil' ? 'Naglo-load…' : 'Loading…'}
       </div>
     );
   }
 
   const cellClass = wrap ? 'px-3.5 py-3 text-slate-700' : 'whitespace-nowrap px-3.5 py-3 text-slate-700';
-  const emptyText = query && rows?.length ? `No results for "${query}".` : emptyMessage;
+  const emptyText = query && rows?.length ? (lang === 'fil' ? `Walang resulta para sa "${query}".` : `No results for "${query}".`) : t(emptyMessage);
 
   return (
     <div className="space-y-3">
@@ -119,14 +121,14 @@ export default function DataTable({
                   <th key={col.key} className="whitespace-nowrap px-3.5 py-3 font-bold" aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined}>
                     {isSortable(col) ? (
                       <button type="button" onClick={() => toggleSort(col)} className="group inline-flex items-center gap-1 uppercase tracking-wider hover:text-slate-900" title="Sort">
-                        {col.header}
+                        {t(col.header)}
                         <Icon
                           name={active && sort.dir === 'desc' ? 'chevronDown' : 'chevronUp'}
                           className={`h-3.5 w-3.5 ${active ? 'text-brand-600' : 'text-slate-300 group-hover:text-slate-400'}`}
                         />
                       </button>
                     ) : (
-                      col.header
+                      t(col.header)
                     )}
                   </th>
                 );
@@ -157,7 +159,7 @@ export default function DataTable({
       {visible.length > pageSize && (
         <div className="flex flex-wrap items-center justify-between gap-2 px-1 pb-1 text-xs text-slate-500">
           <span>
-            Showing {(current - 1) * pageSize + 1}–{Math.min(current * pageSize, visible.length)} of {visible.length}
+            {lang === 'fil' ? 'Ipinapakita ang' : 'Showing'} {(current - 1) * pageSize + 1}–{Math.min(current * pageSize, visible.length)} {lang === 'fil' ? 'sa' : 'of'} {visible.length}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -170,7 +172,7 @@ export default function DataTable({
               <Icon name="chevronLeft" className="h-4 w-4" />
             </button>
             <span className="px-2 font-medium text-slate-700">
-              Page {current} of {pageCount}
+              {lang === 'fil' ? 'Pahina' : 'Page'} {current} {lang === 'fil' ? 'ng' : 'of'} {pageCount}
             </span>
             <button
               type="button"

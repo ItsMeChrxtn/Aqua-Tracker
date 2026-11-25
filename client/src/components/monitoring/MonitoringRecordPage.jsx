@@ -21,7 +21,10 @@ import FishCountCards from './FishCountCards';
  * for the selected fishpond — past batches and the current one — and can be
  * narrowed to a single species or batch.
  */
-export default function MonitoringRecordPage({ title, description, api, fields, chartMetricKey, chartLabel, emptyIcon = 'clipboard', addLabel }) {
+// Optional: `extraColumns` are added before the Batch column, `renderExtra(cycles)`
+// shows a panel under the fish counts for the active cycles in view, and a field
+// with `render(record)` controls how its column is shown.
+export default function MonitoringRecordPage({ title, description, api, fields, chartMetricKey, chartLabel, chartSeries, emptyIcon = 'clipboard', addLabel, extraColumns = [], renderExtra }) {
   const { fishponds, loading: loadingFishponds } = useOwnerFishponds();
 
   const [fishpondId, setFishpondId] = useState('');
@@ -81,14 +84,20 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
 
   const visibleRecords = batchFilter ? records.filter((r) => r.cycle?._id === batchFilter) : records;
 
-  const chartData = chartMetricKey ? visibleRecords.map((r) => ({ x: formatDate(r.date), [chartMetricKey]: r[chartMetricKey] })) : [];
+  const series = chartSeries || (chartMetricKey ? [{ key: chartMetricKey, label: chartLabel }] : []);
+  const chartData = series.length ? visibleRecords.map((r) => ({ x: formatDate(r.date), ...Object.fromEntries(series.map((sr) => [sr.key, r[sr.key] ?? null])) })) : [];
 
   const columns = [
     { key: 'date', header: 'Date', render: (r) => formatDate(r.date) },
     { key: 'species', header: 'Fish Name', render: (r) => r.cycle?.species?.name || '—', value: (r) => r.cycle?.species?.name },
     ...fields
       .filter((f) => f.name !== 'date')
-      .map((f) => ({ key: f.name, header: f.label, render: (r) => (r[f.name] !== undefined && r[f.name] !== '' ? `${r[f.name]}${f.unit ? ` ${f.unit}` : ''}` : '—') })),
+      .map((f) => ({
+        key: f.name,
+        header: f.label,
+        render: f.render || ((r) => (r[f.name] !== undefined && r[f.name] !== '' && r[f.name] !== null ? `${r[f.name]}${f.unit ? ` ${f.unit}` : ''}` : '—')),
+      })),
+    ...extraColumns,
     { key: 'batch', header: 'Batch', render: (r) => batchLabel(r.cycle), value: (r) => batchLabel(r.cycle) },
     {
       key: 'actions',
@@ -158,9 +167,11 @@ export default function MonitoringRecordPage({ title, description, api, fields, 
 
       <FishCountCards cycles={countedCycles} refreshKey={refreshKey} />
 
-      {chartMetricKey && (
+      {renderExtra && renderExtra(countedCycles, refreshKey, { fishpondId, pondCycles })}
+
+      {series.length > 0 && (
         <Card title={chartLabel}>
-          <LineTrendChart data={chartData} series={[{ key: chartMetricKey, label: chartLabel }]} />
+          <LineTrendChart data={chartData} series={series} />
         </Card>
       )}
 

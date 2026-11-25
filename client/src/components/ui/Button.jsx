@@ -1,4 +1,5 @@
 import Icon from './Icon';
+import { useT } from '../../i18n/useT';
 
 const SHINE =
   "relative overflow-hidden after:absolute after:inset-0 after:-translate-x-full after:bg-gradient-to-r after:from-transparent after:via-white/30 after:to-transparent after:transition-transform after:duration-700 hover:after:translate-x-full";
@@ -21,6 +22,7 @@ export default function Button({
   type = 'button',
   ...props
 }) {
+  const { t } = useT();
   const sizeClass = size === 'sm' ? 'px-3.5 py-1.5 text-xs' : 'px-4.5 py-2 text-sm';
   return (
     <button
@@ -31,7 +33,7 @@ export default function Button({
     >
       <span className="relative z-10 inline-flex items-center justify-center gap-1.5">
         {loading ? <Icon name="spinner" className="h-4 w-4 animate-spin" /> : icon && <Icon name={icon} className="h-4 w-4" />}
-        {children}
+        {typeof children === 'string' ? t(children) : children}
       </span>
     </button>
   );

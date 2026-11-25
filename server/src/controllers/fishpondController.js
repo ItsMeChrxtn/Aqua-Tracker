@@ -1,4 +1,5 @@
 const Fishpond = require('../models/Fishpond');
+const { newVerifyCode, ensureVerifyCode } = require('../utils/verification');
 const ProductionCycle = require('../models/ProductionCycle');
 const asyncHandler = require('../utils/asyncHandler');
 const { ApiError } = require('../middleware/errorHandler');
@@ -64,11 +65,25 @@ const getFishpond = asyncHandler(async (req, res) => {
   if (req.user.role === 'fishpond_owner' && !fishpond.owner._id.equals(req.user._id)) {
     throw new ApiError(403, 'You do not have access to this fishpond');
   }
+  await ensureVerifyCode(fishpond);
 
   res.json({ success: true, fishpond });
 });
 
 const uploadedPath = (file) => (file ? `/uploads/${file.filename}` : undefined);
+
+// Map pin from the form (lat / lng as text). Must be inside the Philippines.
+// Returns undefined when not sent, null to remove the pin.
+function readLocation(body) {
+  if (body.lat === undefined && body.lng === undefined) return undefined;
+  if (body.lat === '' && body.lng === '') return null;
+  const lat = Number(body.lat);
+  const lng = Number(body.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 4 || lat > 22 || lng < 116 || lng > 127) {
+    throw new ApiError(400, 'The map pin must be a location in the Philippines');
+  }
+  return { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 };
+}
 
 const registerFishpond = asyncHandler(async (req, res) => {
   const { name, barangay, address, areaSize, capacity } = req.body;
@@ -82,6 +97,7 @@ const registerFishpond = asyncHandler(async (req, res) => {
     throw new ApiError(400, `Fishponds can only be registered in ${FISHPOND_BARANGAYS.join(', ')}.`);
   }
   assertValidSize({ areaSize, capacity });
+  const location = readLocation(req.body);
 
   const fishpond = await Fishpond.create({
     owner: req.user._id,
@@ -90,6 +106,7 @@ const registerFishpond = asyncHandler(async (req, res) => {
     address,
     areaSize,
     capacity,
+    location: location || undefined,
     imageUrl: uploadedPath(image),
     moaUrl: uploadedPath(moa),
     moaName: moa.originalname,
@@ -131,9 +148,11 @@ const updateFishpond = asyncHandler(async (req, res) => {
   if (isSet(areaSize)) fishpond.areaSize = areaSize;
   if (isSet(capacity)) fishpond.capacity = capacity;
   if (req.file) fishpond.imageUrl = `/uploads/${req.file.filename}`;
+  const location = readLocation(req.body);
+  if (location !== undefined) fishpond.location = location || undefined;
 
   await fishpond.save();
-  await logActivity(req, { action: 'UPDATE', targetType: 'Fishpond', targetId: fishpond._id, details: `Updated fishpond ${fishpond.name}` });
+  await logActivity(req, { action: 'UPDATE', targetType: 'Fishpond', targetId: fishpond._id, doc: fishpond, details: `Updated fishpond ${fishpond.name}` });
 
   res.json({ success: true, fishpond });
 });
@@ -170,6 +189,7 @@ const approveFishpond = asyncHandler(async (req, res) => {
   fishpond.status = 'approved';
   fishpond.approvedBy = req.user._id;
   fishpond.approvedAt = new Date();
+  fishpond.verifyCode = fishpond.verifyCode || newVerifyCode();
   await fishpond.save();
 
   await createNotification({

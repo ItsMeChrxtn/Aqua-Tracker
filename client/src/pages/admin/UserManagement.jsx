@@ -15,6 +15,7 @@ const ROLE_BADGE = {
   fishpond_owner: 'bg-sky-50 text-sky-700 border-sky-300',
   agriculture_staff: 'bg-violet-50 text-violet-700 border-violet-300',
   admin: 'bg-brand-50 text-brand-700 border-brand-300',
+  buyer: 'bg-amber-50 text-amber-700 border-amber-300',
 };
 
 const EMPTY_FORM = { name: '', email: '', role: 'agriculture_staff', phone: '', barangay: '' };
@@ -119,6 +120,7 @@ export default function UserManagement() {
             <option value="fishpond_owner">Fishpond Owner</option>
             <option value="agriculture_staff">Agriculture Office Staff</option>
             <option value="admin">Administrator</option>
+            <option value="buyer">Buyer</option>
           </Select>
           <Button icon="plus" onClick={() => setModalOpen(true)}>New Account</Button>
         </div>
@@ -181,6 +183,7 @@ export default function UserManagement() {
               <option value="agriculture_staff">Agriculture Office Staff</option>
               <option value="admin">Administrator</option>
               <option value="fishpond_owner">Fishpond Owner</option>
+              <option value="buyer">Buyer</option>
             </Select>
           </Field>
           <div className="grid grid-cols-2 gap-3">

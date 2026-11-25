@@ -12,6 +12,7 @@ import Icon from '../../components/ui/Icon';
 import FishpondPhoto from '../../components/ui/FishpondPhoto';
 import { Field, Input, Select, SelectWithOther, BarangaySelect } from '../../components/ui/FormField';
 import ApplicationSummary from '../../components/fisherfolk/ApplicationSummary';
+import VerificationQr from '../../components/ui/VerificationQr';
 import { localTodayISO } from '../../utils/dates';
 import {
   REGISTRATION_TYPES,
@@ -288,6 +289,11 @@ export default function FisherfolkRegistration() {
                 : 'Your application is being reviewed by the Municipal Agriculture Office. Print the PDF, sign it, and have it verified by your Punong Barangay.'}
             </p>
           </div>
+          {app.status === 'approved' && app.verifyCode && (
+            <div className="mb-4">
+              <VerificationQr code={app.verifyCode} label="Your FishR verification QR" fileName={`fishr-${app.registrationNo || 'qr'}`} />
+            </div>
+          )}
           <ApplicationSummary application={app} />
         </Card>
       </div>

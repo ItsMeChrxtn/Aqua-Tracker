@@ -196,11 +196,12 @@ export default function LandingPage() {
                     <Icon name="arrowRight" className="h-4 w-4" />
                   </Button>
                 </Link>
-                <a href="#features">
+                <Link to="/register?type=buyer">
                   <Button variant="secondary" className="w-full border-white/30 bg-white/10 px-6 py-3 text-[15px] text-white hover:bg-white/20 sm:w-auto">
-                    View Features
+                    <Icon name="cart" className="h-4 w-4" />
+                    Buy Fresh Fish
                   </Button>
-                </a>
+                </Link>
               </div>
               <div className="animate-fade-in-up mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-brand-50 lg:justify-start" style={{ animationDelay: '400ms' }}>
                 <span className="inline-flex items-center gap-1.5"><Icon name="mobile" className="h-3.5 w-3.5 text-leaf-300" /> Works on any device</span>

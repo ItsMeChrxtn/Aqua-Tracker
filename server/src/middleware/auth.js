@@ -31,9 +31,25 @@ const protect = asyncHandler(async (req, res, next) => {
     throw new ApiError(403, 'Please set a new password before continuing.', 'PASSWORD_CHANGE_REQUIRED');
   }
 
+  // Most older routes only check that someone is logged in, so buyers are kept
+  // to the marketplace side of the API here instead of route by route.
+  if (user.role === 'buyer' && !buyerMayUse(req)) {
+    throw new ApiError(403, 'You do not have permission to perform this action');
+  }
+
   req.user = user;
   next();
 });
+
+const BUYER_PATHS = ['/api/auth/', '/api/notifications', '/api/marketplace', '/api/orders'];
+const BUYER_READ_ONLY_PATHS = ['/api/species', '/api/settings'];
+
+function buyerMayUse(req) {
+  const path = req.originalUrl.split('?')[0];
+  const under = (prefix) => path === prefix || path.startsWith(prefix.endsWith('/') ? prefix : `${prefix}/`);
+  if (BUYER_PATHS.some(under)) return true;
+  return req.method === 'GET' && BUYER_READ_ONLY_PATHS.some(under);
+}
 
 function authorize(...roles) {
   return (req, res, next) => {

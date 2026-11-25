@@ -12,6 +12,7 @@ import Modal from '../../components/ui/Modal';
 import FishpondPhoto from '../../components/ui/FishpondPhoto';
 import { Field, Select, Textarea } from '../../components/ui/FormField';
 import ApplicationSummary from '../../components/fisherfolk/ApplicationSummary';
+import VerificationQr from '../../components/ui/VerificationQr';
 import { APPLICATION_STATUS, REGISTRATION_TYPES, labelOf, fullName } from '../../utils/fisherfolk';
 
 
@@ -147,6 +148,9 @@ export default function FisherfolkApplications() {
             <ApplicationSummary application={selected} />
             {selected.status === 'rejected' && selected.remarks && (
               <p className="rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">Returned: {selected.remarks}</p>
+            )}
+            {selected.status === 'approved' && selected.verifyCode && (
+              <VerificationQr code={selected.verifyCode} label="Verification QR" fileName={`fishr-${selected.registrationNo || 'qr'}`} />
             )}
             {selected.status === 'approved' && (
               <p className="text-xs text-slate-500">

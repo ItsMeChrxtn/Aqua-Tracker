@@ -1,6 +1,7 @@
 import MonitoringRecordPage from '../../components/monitoring/MonitoringRecordPage';
 import { feedingApi } from '../../api/fishponds';
 import { inventoryApi } from '../../api/inventory';
+import FeedingGuideCard from '../../components/monitoring/FeedingGuideCard';
 
 // Kept in sync with ORGANIC_FEED in server/src/controllers/feedingController.js.
 const ORGANIC_FEED = 'Organic feeds (lumot)';
@@ -41,6 +42,7 @@ export default function FeedingRecords() {
       fields={fields}
       chartMetricKey="quantityKg"
       chartLabel="Feed Given (kg)"
+      renderExtra={(cycles, refreshKey) => <FeedingGuideCard cycles={cycles} refreshKey={refreshKey} />}
     />
   );
 }

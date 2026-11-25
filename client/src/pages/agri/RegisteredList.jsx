@@ -3,9 +3,11 @@ import { fishpondApi } from '../../api/fishponds';
 import Card from '../../components/ui/Card';
 import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
+import Icon from '../../components/ui/Icon';
 import { Select } from '../../components/ui/FormField';
 import { formatArea, formatCapacity, formatDate } from '../../utils/format';
 import { FISHPOND_BARANGAYS } from '../../utils/barangays';
+import FishpondMap from '../../components/map/FishpondMap';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -20,6 +22,7 @@ export default function RegisteredList() {
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
   const [order, setOrder] = useState('newest');
+  const [view, setView] = useState('table'); // table | map
 
   useEffect(() => {
     fishpondApi.list({ status: 'approved' }).then(setFishponds).finally(() => setLoading(false));
@@ -80,10 +83,31 @@ export default function RegisteredList() {
             <option value="newest">Newest approved first</option>
             <option value="oldest">Oldest approved first</option>
           </Select>
+          <div className="flex overflow-hidden rounded-xl border border-slate-200" role="group" aria-label="View">
+            {[
+              ['table', 'Table', 'list'],
+              ['map', 'Map', 'location'],
+            ].map(([value, label, icon]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setView(value)}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold ${view === value ? 'bg-brand-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+              >
+                <Icon name={icon} className="h-3.5 w-3.5" /> {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <Card padded={false}>
+      {view === 'map' && (
+        <Card title="Fishpond Map" subtitle="Approved fishponds pinned by their owners, colored by barangay">
+          <FishpondMap fishponds={filtered} height={520} />
+        </Card>
+      )}
+
+      <Card padded={false} className={view === 'map' ? 'hidden' : ''}>
         <div className="p-2">
           <DataTable
             columns={[

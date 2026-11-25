@@ -71,7 +71,25 @@ export default function ActivityLogs() {
               { key: 'user', header: 'User', render: (l) => (l.user ? `${l.user.name} (${l.user.role})` : 'System') },
               { key: 'action', header: 'Action' },
               { key: 'targetType', header: 'Target' },
-              { key: 'details', header: 'Details' },
+              {
+                key: 'details',
+                header: 'Details',
+                value: (l) => [l.details, ...(l.changes || []).map((ch) => `${ch.field} ${ch.from} ${ch.to}`)].join(' '),
+                render: (l) => (
+                  <div className="max-w-md">
+                    <p>{l.details}</p>
+                    {l.changes?.length > 0 && (
+                      <ul className="mt-1 space-y-0.5 text-[11px] text-slate-500">
+                        {l.changes.map((ch) => (
+                          <li key={ch.field}>
+                            <span className="font-semibold text-slate-700">{ch.field}</span>: <span className="text-rose-600 line-through">{ch.from}</span> → <span className="text-leaf-700">{ch.to}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ),
+              },
             ]}
             rows={logs}
             searchable="Search user, details…"

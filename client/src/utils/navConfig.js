@@ -14,6 +14,7 @@ export const NAV_CONFIG = {
       section: 'Monitoring',
       items: [
         { label: 'Feeding Records', to: '/owner/monitoring/feeding', icon: 'clipboard' },
+        { label: 'Water Quality', to: '/owner/monitoring/water-quality', icon: 'freshwater' },
         { label: 'Survival Monitoring', to: '/owner/monitoring/survival', icon: 'survival' },
       ],
     },
@@ -22,8 +23,13 @@ export const NAV_CONFIG = {
       items: [{ label: 'Harvest Estimation', to: '/owner/harvest-estimation', icon: 'harvest' }],
     },
     {
-      section: 'Sales',
-      items: [{ label: 'Sales Records', to: '/owner/monitoring/sales', icon: 'report' }],
+      section: 'Sales & Marketplace',
+      items: [
+        { label: 'Sales Records', to: '/owner/monitoring/sales', icon: 'report' },
+        { label: 'Expenses & Profit', to: '/owner/expenses', icon: 'sales' },
+        { label: 'Product Management', to: '/owner/products', icon: 'store' },
+        { label: 'Orders', to: '/owner/orders', icon: 'cart' },
+      ],
     },
     { section: 'Reports', items: [{ label: 'Reports', to: '/owner/reports', icon: 'report' }] },
     {
@@ -53,6 +59,19 @@ export const NAV_CONFIG = {
     },
     { section: 'Reports', items: [{ label: 'Reports', to: '/agri/reports', icon: 'report' }] },
   ],
+  buyer: [
+    {
+      section: 'Marketplace',
+      items: [
+        { label: 'Shop Fish', to: '/buyer/marketplace', icon: 'store' },
+        { label: 'My Orders', to: '/buyer/orders', icon: 'bag' },
+      ],
+    },
+    {
+      section: 'Settings',
+      items: [{ label: 'Profile Settings', to: '/buyer/settings/profile', icon: 'settings' }],
+    },
+  ],
   admin: [
     { section: null, items: [{ label: 'Dashboard', to: '/admin/dashboard', icon: 'dashboard' }] },
     {
@@ -72,6 +91,7 @@ export const ROLE_HOME = {
   fishpond_owner: '/owner/dashboard',
   agriculture_staff: '/agri/dashboard',
   admin: '/admin/dashboard',
+  buyer: '/buyer/marketplace',
 };
 
 export function getPageTitle(pathname, role) {

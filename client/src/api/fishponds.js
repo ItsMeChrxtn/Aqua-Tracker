@@ -23,6 +23,8 @@ export const cycleApi = {
   capacity: (fishpondId) => client.get(`/fishponds/${fishpondId}/capacity`).then((r) => r.data),
   get: (id) => client.get(`/cycles/${id}`).then((r) => r.data),
   update: (id, data) => client.put(`/cycles/${id}`, data).then((r) => r.data.cycle),
+  // Growth rates, FCR, feeding guide, harvest projection and cycle summary.
+  analytics: (id) => client.get(`/cycles/${id}/analytics`).then((r) => r.data.analytics),
 };
 
 function recordApi(segment) {
@@ -41,6 +43,8 @@ export const growthApi = recordApi('growth');
 export const mortalityApi = recordApi('mortality');
 export const feedingApi = recordApi('feeding');
 export const salesApi = recordApi('sales');
+export const waterQualityApi = recordApi('water-quality');
+export const expenseApi = recordApi('expenses');
 
 export const harvestApi = {
   getEstimate: (cycleId) => client.get(`/cycles/${cycleId}/harvest-estimate`).then((r) => r.data.estimate),

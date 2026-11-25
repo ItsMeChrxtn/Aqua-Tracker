@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from '../../utils/notify';
 import { useAuth } from '../../auth/AuthContext';
 import { apiErrorMessage } from '../../api/client';
@@ -14,11 +14,19 @@ import { FISHPOND_BARANGAYS } from '../../utils/barangays';
 
 const hasLetters = (value) => !/^[0-9+() -]*$/.test(value);
 
-const EMPTY = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', phone: '', barangay: '' };
+const EMPTY = { firstName: '', lastName: '', email: '', password: '', confirmPassword: '', phone: '', barangay: '', address: '' };
+
+const ACCOUNT_TYPES = [
+  { value: 'fishpond_owner', label: 'Fishpond Owner', hint: 'Monitor my fishpond and sell my harvest', icon: 'fish' },
+  { value: 'buyer', label: 'Buyer', hint: 'Buy fresh fish from local fishponds', icon: 'cart' },
+];
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const [accountType, setAccountType] = useState(params.get('type') === 'buyer' ? 'buyer' : 'fishpond_owner');
+  const isBuyer = accountType === 'buyer';
   const [form, setForm] = useState(EMPTY);
   const [loading, setLoading] = useState(false);
 
@@ -53,7 +61,8 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const res = await register(form);
+      const { barangay, address, ...rest } = form;
+      const res = await register({ ...rest, accountType, ...(isBuyer ? { address } : { barangay }) });
       toast.success(res.message);
       navigate('/verify-email', { state: { email: res.email } });
     } catch (err) {
@@ -66,8 +75,12 @@ export default function RegisterPage() {
   return (
     <div className="flex min-h-screen bg-white">
       <AuthBrandPanel
-        heading="Join small-scale fishpond operators going digital."
-        sub="Registration is free — your fishpond just needs approval from the Agriculture Office before you start monitoring."
+        heading={isBuyer ? 'Fresh fish, straight from Noveleta fishponds.' : 'Join small-scale fishpond operators going digital.'}
+        sub={
+          isBuyer
+            ? 'Create a free buyer account to browse fish for sale, see the price per kilo, and order for pickup or delivery.'
+            : 'Registration is free — your fishpond just needs approval from the Agriculture Office before you start monitoring.'
+        }
       />
 
       <div className="flex flex-1 items-center justify-center px-4 py-10">
@@ -79,10 +92,29 @@ export default function RegisterPage() {
               </div>
             </Link>
             <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-900">Create your AquaTrack account</h1>
-            <p className="mt-1.5 text-sm text-slate-600">For small-scale fishpond operators in Noveleta, Cavite</p>
+            <p className="mt-1.5 text-sm text-slate-600">{isBuyer ? 'Buy fish from fishpond owners in Noveleta, Cavite' : 'For small-scale fishpond operators in Noveleta, Cavite'}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Account type">
+              {ACCOUNT_TYPES.map((t) => (
+                <button
+                  type="button"
+                  key={t.value}
+                  role="radio"
+                  aria-checked={accountType === t.value}
+                  onClick={() => setAccountType(t.value)}
+                  className={`flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition-colors ${
+                    accountType === t.value ? 'border-brand-600 bg-brand-50' : 'border-slate-200 hover:border-brand-300'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                    <Icon name={t.icon} className="h-4 w-4 text-brand-600" /> {t.label}
+                  </span>
+                  <span className="text-[11px] leading-snug text-slate-500">{t.hint}</span>
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <Field label="First name" required>
                 <Input required value={form.firstName} onChange={update('firstName')} placeholder="Juan" autoComplete="given-name" />
@@ -98,10 +130,17 @@ export default function RegisterPage() {
               <Field label="Phone number">
                 <Input inputMode="tel" maxLength={13} value={form.phone} onChange={update('phone')} placeholder="09171234567" />
               </Field>
-              <Field label="Barangay">
-                <BarangaySelect value={form.barangay} onChange={update('barangay')} options={FISHPOND_BARANGAYS} />
-              </Field>
+              {!isBuyer && (
+                <Field label="Barangay">
+                  <BarangaySelect value={form.barangay} onChange={update('barangay')} options={FISHPOND_BARANGAYS} />
+                </Field>
+              )}
             </div>
+            {isBuyer && (
+              <Field label="Delivery address" hint="Optional — used when you order for delivery">
+                <Input value={form.address} onChange={update('address')} maxLength={200} placeholder="House no., street, barangay, municipality" />
+              </Field>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Password" required>
                 <PasswordInput required maxLength={PASSWORD_MAX} value={form.password} onChange={update('password')} />

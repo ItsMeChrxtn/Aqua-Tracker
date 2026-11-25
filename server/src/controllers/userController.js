@@ -58,7 +58,7 @@ const createUser = asyncHandler(async (req, res) => {
   if (!name || !email || !role) {
     throw new ApiError(400, 'Name, email, and role are required');
   }
-  const validRoles = ['fishpond_owner', 'agriculture_staff', 'admin'];
+  const validRoles = ['fishpond_owner', 'agriculture_staff', 'admin', 'buyer'];
   if (!validRoles.includes(role)) {
     throw new ApiError(400, `Role must be one of: ${validRoles.join(', ')}`);
   }
@@ -102,7 +102,7 @@ const updateUser = asyncHandler(async (req, res) => {
   if (phone !== undefined) user.phone = phone;
   if (barangay !== undefined) user.barangay = barangay;
   if (role !== undefined) {
-    const validRoles = ['fishpond_owner', 'agriculture_staff', 'admin'];
+    const validRoles = ['fishpond_owner', 'agriculture_staff', 'admin', 'buyer'];
     if (!validRoles.includes(role)) throw new ApiError(400, `Role must be one of: ${validRoles.join(', ')}`);
     user.role = role;
   }
@@ -118,7 +118,7 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 
   await user.save();
-  await logActivity(req, { action: 'UPDATE', targetType: 'User', targetId: user._id, details: `Updated user ${user.email}` });
+  await logActivity(req, { action: 'UPDATE', targetType: 'User', targetId: user._id, doc: user, details: `Updated user ${user.email}` });
 
   res.json({ success: true, user: user.toSafeObject() });
 });
@@ -144,7 +144,7 @@ const resetUserPassword = asyncHandler(async (req, res) => {
   user.passwordHash = await bcrypt.hash(tempPassword, 10);
   user.mustChangePassword = true;
   await user.save();
-  await logActivity(req, { action: 'UPDATE', targetType: 'User', targetId: user._id, details: `Reset password for ${user.email}` });
+  await logActivity(req, { action: 'UPDATE', targetType: 'User', targetId: user._id, doc: user, details: `Reset password for ${user.email}` });
 
   const emailSent = await sendCredentials(req, user, tempPassword, true);
   res.json({ success: true, message: 'Password reset', emailSent, ...(emailSent ? {} : { tempPassword }) });

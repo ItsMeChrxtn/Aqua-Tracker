@@ -44,7 +44,7 @@ const updateItem = asyncHandler(async (req, res) => {
   if (notes !== undefined) item.notes = notes;
 
   await item.save();
-  await logActivity(req, { action: 'UPDATE', targetType: 'InventoryItem', targetId: item._id, details: `Updated inventory item ${item.name}` });
+  await logActivity(req, { action: 'UPDATE', targetType: 'InventoryItem', targetId: item._id, doc: item, details: `Updated inventory item ${item.name}` });
   res.json({ success: true, item });
 });
 

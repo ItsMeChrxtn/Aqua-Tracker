@@ -6,7 +6,7 @@ const notificationSchema = new mongoose.Schema(
     fishpond: { type: mongoose.Schema.Types.ObjectId, ref: 'Fishpond' },
     type: {
       type: String,
-      enum: ['high_mortality', 'near_harvest', 'low_stock', 'registration_approved', 'registration_rejected', 'general'],
+      enum: ['high_mortality', 'near_harvest', 'low_stock', 'registration_approved', 'registration_rejected', 'order', 'water_quality', 'insight', 'general'],
       required: true,
     },
     message: { type: String, required: true, trim: true },

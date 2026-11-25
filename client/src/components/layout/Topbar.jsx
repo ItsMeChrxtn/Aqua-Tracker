@@ -2,9 +2,12 @@ import { useAuth } from '../../auth/AuthContext';
 import { ROLE_LABEL } from '../../utils/format';
 import Icon from '../ui/Icon';
 import NotificationBell from './NotificationBell';
+import LanguageToggle from '../../i18n/LanguageToggle';
+import { useT } from '../../i18n/useT';
 
 export default function Topbar({ title, onMenuClick }) {
   const { user } = useAuth();
+  const { t } = useT();
   const initials = user.name
     .split(' ')
     .map((p) => p[0])
@@ -18,9 +21,10 @@ export default function Topbar({ title, onMenuClick }) {
         <button onClick={onMenuClick} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden">
           <Icon name="menu" className="h-5 w-5" />
         </button>
-        <h1 className="text-sm font-bold text-slate-700 sm:text-base">{title}</h1>
+        <h1 className="text-sm font-bold text-slate-700 sm:text-base">{t(title)}</h1>
       </div>
       <div className="flex items-center gap-3">
+        <LanguageToggle />
         <NotificationBell />
         <div className="flex items-center gap-2.5 border-l border-slate-200 pl-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-xs font-bold text-white shadow-sm">
@@ -28,7 +32,7 @@ export default function Topbar({ title, onMenuClick }) {
           </div>
           <div className="hidden sm:block">
             <p className="text-sm font-medium leading-tight text-slate-700">{user.name}</p>
-            <p className="text-[11px] leading-tight text-slate-400">{ROLE_LABEL[user.role]}</p>
+            <p className="text-[11px] leading-tight text-slate-400">{t(ROLE_LABEL[user.role])}</p>
           </div>
         </div>
       </div>

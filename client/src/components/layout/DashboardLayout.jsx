@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import OfflineBanner from './OfflineBanner';
 import { useAuth } from '../../auth/AuthContext';
 import { getPageTitle } from '../../utils/navConfig';
 
@@ -14,6 +15,7 @@ export default function DashboardLayout() {
     <div className="flex h-screen overflow-hidden bg-slate-50">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col">
+        <OfflineBanner />
         <Topbar title={getPageTitle(location.pathname, user.role)} onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           <div className="mx-auto max-w-[1600px]">

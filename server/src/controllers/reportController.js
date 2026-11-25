@@ -189,7 +189,7 @@ const adminSummary = asyncHandler(async (req, res) => {
     Fishpond.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
     Species.countDocuments(),
   ]);
-  const userCounts = { fishpond_owner: 0, agriculture_staff: 0, admin: 0 };
+  const userCounts = { fishpond_owner: 0, agriculture_staff: 0, admin: 0, buyer: 0 };
   userCountsAgg.forEach((r) => { userCounts[r._id] = r.count; });
   const fishpondCounts = { pending: 0, approved: 0, rejected: 0 };
   fishpondCountsAgg.forEach((r) => { fishpondCounts[r._id] = r.count; });

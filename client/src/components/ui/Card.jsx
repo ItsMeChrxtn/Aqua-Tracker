@@ -1,11 +1,14 @@
+import { useT } from '../../i18n/useT';
+
 export default function Card({ title, subtitle, action, className = '', children, padded = true }) {
+  const { t } = useT();
   return (
     <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>
       {(title || action) && (
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
           <div>
-            {title && <h3 className="text-sm font-bold text-slate-900">{title}</h3>}
-            {subtitle && <p className="mt-0.5 text-xs text-slate-600">{subtitle}</p>}
+            {title && <h3 className="text-sm font-bold text-slate-900">{t(title)}</h3>}
+            {subtitle && <p className="mt-0.5 text-xs text-slate-600">{t(subtitle)}</p>}
           </div>
           {action}
         </div>

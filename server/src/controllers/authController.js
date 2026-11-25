@@ -13,8 +13,13 @@ const { ALLOWED_BARANGAYS: REGISTRATION_BARANGAYS, assertValidPhone, assertAllow
 // stays unverified until the emailed OTP is confirmed via /verify-email.
 // agriculture_staff / admin accounts are created via the admin bootstrap
 // script or the Admin > User Management UI.
+// Buyers can sign up too (accountType: 'buyer'); they may live outside the
+// fishpond barangays, so they give a delivery address instead.
 const register = asyncHandler(async (req, res) => {
-  const { firstName, lastName, email, password, phone, barangay } = req.body;
+  const { firstName, lastName, email, password, phone } = req.body;
+  const role = req.body.accountType === 'buyer' ? 'buyer' : 'fishpond_owner';
+  const barangay = role === 'buyer' ? undefined : req.body.barangay;
+  const address = role === 'buyer' ? String(req.body.address || '').trim().slice(0, 200) || undefined : undefined;
   const nameParts = [firstName, lastName].map((part) => String(part || '').trim()).filter(Boolean);
 
   if (nameParts.length < 2 || !email || !password) {
@@ -41,7 +46,7 @@ const register = asyncHandler(async (req, res) => {
 
   if (user) {
     // Registering again before verifying: take the latest details.
-    Object.assign(user, { name, passwordHash, phone, barangay });
+    Object.assign(user, { name, passwordHash, phone, barangay, address, role });
     await user.save();
   } else {
     user = await User.create({
@@ -50,7 +55,8 @@ const register = asyncHandler(async (req, res) => {
       passwordHash,
       phone,
       barangay,
-      role: 'fishpond_owner',
+      address,
+      role,
       emailVerified: false,
     });
     await logActivity({ user, ip: req.ip }, { action: 'REGISTER', targetType: 'User', targetId: user._id, details: `${user.email} registered` });
@@ -135,13 +141,14 @@ const me = asyncHandler(async (req, res) => {
 });
 
 const updateProfile = asyncHandler(async (req, res) => {
-  const { name, phone, barangay } = req.body;
+  const { name, phone, barangay, address } = req.body;
   if (name !== undefined && !String(name).trim()) throw new ApiError(400, 'Full name is required');
   assertValidPhone(phone);
   if (req.user.role === 'fishpond_owner') assertAllowedBarangay(barangay, req.user.barangay);
   if (name !== undefined) req.user.name = name;
   if (phone !== undefined) req.user.phone = phone;
-  if (barangay !== undefined) req.user.barangay = barangay;
+  if (barangay !== undefined && req.user.role !== 'buyer') req.user.barangay = barangay;
+  if (address !== undefined && req.user.role === 'buyer') req.user.address = String(address).trim().slice(0, 200);
   await req.user.save();
   res.json({ success: true, user: req.user.toSafeObject() });
 });
