@@ -24,7 +24,7 @@ function buildDateFilter(query) {
  */
 // Optional hooks: `prepare` can validate against the cycle and adjust the data
 // before it is saved; `onRemoved` runs after a record is deleted.
-function createRecordHandlers(Model, { targetType, pickFields, onCreated, prepare, onRemoved }) {
+function createRecordHandlers(Model, { targetType, pickFields, onCreated, prepare, beforeRemove, onRemoved }) {
   const listByCycle = asyncHandler(async (req, res) => {
     const cycle = await loadCycleWithAccess(req.user, req.params.cycleId);
     const filter = { cycle: cycle._id };
@@ -40,15 +40,17 @@ function createRecordHandlers(Model, { targetType, pickFields, onCreated, prepar
 
     const cycleFilter = { fishpond: fishpond._id };
     if (req.query.speciesId) cycleFilter.species = req.query.speciesId;
-    const cycles = await ProductionCycle.find(cycleFilter).populate('species').select('_id species batchName stockingDate status');
+    const cycles = await ProductionCycle.find(cycleFilter).populate('species').select('_id species batchName cycleNumber stockingDate status');
 
     const filter = { cycle: { $in: cycles.map((c) => c._id) } };
     const dateFilter = buildDateFilter(req.query);
     if (dateFilter) filter.date = dateFilter;
 
-    const records = await Model.find(filter).sort({ date: 1 }).populate({
+    let query = Model.find(filter).sort({ date: 1 });
+    if (Model.schema.path('species')) query = query.populate('species', 'name waterType');
+    const records = await query.populate({
       path: 'cycle',
-      select: 'batchName species stockingDate',
+      select: 'batchName cycleNumber species stockingDate initialCount status',
       populate: { path: 'species', select: 'name waterType' },
     });
 
@@ -78,6 +80,7 @@ function createRecordHandlers(Model, { targetType, pickFields, onCreated, prepar
     const record = await Model.findById(req.params.id);
     if (!record) throw new ApiError(404, 'Record not found');
     await loadCycleWithAccess(req.user, record.cycle);
+    if (beforeRemove) await beforeRemove({ record, req });
 
     await record.deleteOne();
     if (onRemoved) await onRemoved({ record, req });

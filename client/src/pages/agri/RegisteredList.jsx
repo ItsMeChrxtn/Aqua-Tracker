@@ -5,7 +5,7 @@ import DataTable from '../../components/ui/DataTable';
 import Spinner from '../../components/ui/Spinner';
 import { Select } from '../../components/ui/FormField';
 import { formatArea, formatCapacity, formatDate } from '../../utils/format';
-import { withExistingBarangays } from '../../utils/barangays';
+import { FISHPOND_BARANGAYS } from '../../utils/barangays';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -25,7 +25,6 @@ export default function RegisteredList() {
     fishpondApi.list({ status: 'approved' }).then(setFishponds).finally(() => setLoading(false));
   }, []);
 
-  const barangays = useMemo(() => withExistingBarangays(fishponds.map((f) => f.barangay)), [fishponds]);
   const years = useMemo(
     () => [...new Set(fishponds.filter((f) => f.approvedAt).map((f) => new Date(f.approvedAt).getFullYear()))].sort((a, b) => b - a),
     [fishponds]
@@ -55,7 +54,7 @@ export default function RegisteredList() {
         <div className="flex flex-wrap items-center gap-2 [&>select]:w-auto">
           <Select value={barangay} onChange={(e) => setBarangay(e.target.value)} aria-label="Barangay">
             <option value="">All barangays</option>
-            {barangays.map((b) => (
+            {FISHPOND_BARANGAYS.map((b) => (
               <option key={b} value={b}>{b}</option>
             ))}
           </Select>

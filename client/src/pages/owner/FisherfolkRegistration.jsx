@@ -10,7 +10,7 @@ import Button from '../../components/ui/Button';
 import Spinner from '../../components/ui/Spinner';
 import Icon from '../../components/ui/Icon';
 import FishpondPhoto from '../../components/ui/FishpondPhoto';
-import { Field, Input, Select, BarangaySelect } from '../../components/ui/FormField';
+import { Field, Input, Select, SelectWithOther, BarangaySelect } from '../../components/ui/FormField';
 import ApplicationSummary from '../../components/fisherfolk/ApplicationSummary';
 import { localTodayISO } from '../../utils/dates';
 import {
@@ -27,6 +27,7 @@ import {
   ageFrom,
 } from '../../utils/fisherfolk';
 
+const RELATIONSHIPS = ['Spouse', 'Guardian', 'Relatives', 'Friend'].map((r) => ({ value: r, label: r }));
 const STEPS = ['Personal Info', 'Household & Background', 'Emergency & IDs', 'Livelihood', 'Attachments & Certification'];
 const THIS_YEAR = new Date().getFullYear();
 const isImage = (file) => /^image\//.test(file?.type || '');
@@ -184,7 +185,7 @@ function FilePicker({ label, hint, accept, file, savedUrl, savedName, onPick, im
   useEffect(() => () => preview && URL.revokeObjectURL(preview), [preview]);
   return (
     <Field label={label} required hint={hint}>
-      <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-300 p-3">
+      <div className="flex min-h-[7.75rem] items-center gap-3 rounded-xl border border-dashed border-slate-300 p-3">
         {imagePreview &&
           (preview ? (
             <img src={preview} alt="" className="h-24 w-24 rounded-lg object-cover" />
@@ -344,7 +345,7 @@ export default function FisherfolkRegistration() {
             <div className="grid gap-3 sm:grid-cols-[110px_1fr_1fr_1fr_110px]">
               <Field label="Salutation">
                 <Select {...bind('salutation')}>
-                  <option value="">—</option>
+                  <option value="" disabled hidden>Select</option>
                   {SALUTATIONS.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
@@ -489,7 +490,13 @@ export default function FisherfolkRegistration() {
                 <Input {...bindIn('emergency', 'name')} maxLength={100} />
               </Field>
               <Field label="Relationship" required>
-                <Input {...bindIn('emergency', 'relationship')} maxLength={40} placeholder="e.g. Spouse" />
+                <SelectWithOther
+                  options={RELATIONSHIPS}
+                  placeholder="Select relationship"
+                  otherPlaceholder="Please specify the relationship"
+                  value={form.emergency.relationship}
+                  onChange={(value) => setIn('emergency', 'relationship', value.slice(0, 40))}
+                />
               </Field>
               <Field label="Contact No." required>
                 <Input inputMode="tel" maxLength={13} {...bindIn('emergency', 'contactNo')} placeholder="09171234567" />

@@ -15,22 +15,27 @@ import Icon from '../../components/ui/Icon';
 import { Field, Input, Select } from '../../components/ui/FormField';
 import BatchDetailsModal from '../../components/monitoring/BatchDetailsModal';
 import RecordFormModal from '../../components/monitoring/RecordFormModal';
-import { fishLabel } from '../../utils/cycleLabels';
 import { localTodayISO, nextDayISO, harvestMonthsLabel } from '../../utils/dates';
 import { formatArea, formatCapacity, formatDate, formatNumber, STATUS_BADGE_CLASS, WATER_TYPE_LABEL } from '../../utils/format';
 
-const sameName = (a, b) => (a || '').trim().toLowerCase() === (b || '').trim().toLowerCase();
-
-// Suggests the next unused "Batch N" for this fishpond.
-function nextBatchName(cycles) {
-  let n = cycles.length + 1;
-  while (cycles.some((c) => sameName(c.batchName, `Batch ${n}`) || sameName(c.batchName, String(n)))) n += 1;
-  return `Batch ${n}`;
+// The number the server will give the next cycle (Cycle #1, #2, …).
+function nextCycleNumber(cycles) {
+  return Math.max(cycles.length, ...cycles.map((c) => c.cycleNumber || 0)) + 1;
 }
 
-const EMPTY_CYCLE = { speciesId: '', batchName: '', stockingDate: '', expectedHarvestDate: '', initialCount: '' };
+const cycleName = (c) => c?.batchName || (c?.cycleNumber ? `Cycle #${c.cycleNumber}` : '—');
 
-const STOCKING_FIELDS = [
+const EMPTY_CYCLE = { speciesId: '', stockingDate: '', expectedHarvestDate: '', initialCount: '' };
+
+const stockingFields = (species) => [
+  {
+    name: 'species',
+    label: 'Species',
+    type: 'select',
+    required: true,
+    placeholder: 'Select species',
+    options: species.map((s) => ({ value: s._id, label: `${s.name} (${WATER_TYPE_LABEL[s.waterType]})` })),
+  },
   { name: 'date', label: 'Date', type: 'date', required: true, minToday: true, hint: 'Today or a later date' },
   { name: 'quantity', label: 'Quantity (fingerlings)', type: 'number', required: true },
   { name: 'source', label: 'Source / Supplier', type: 'text' },
@@ -68,22 +73,23 @@ export default function FishpondDetail() {
 
   useEffect(load, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const runningCycle = cycles.find((c) => c.status === 'active');
+
   const openCycleModal = () => {
-    setForm({ ...EMPTY_CYCLE, batchName: nextBatchName(cycles), stockingDate: localTodayISO() });
+    if (runningCycle) {
+      toast.error(`${cycleName(runningCycle)} is still active. Harvest it first before starting a new cycle.`);
+      return;
+    }
+    setForm({ ...EMPTY_CYCLE, stockingDate: localTodayISO() });
     setRoom(null);
     cycleApi.capacity(id).then(setRoom);
     setModalOpen(true);
   };
 
-  const duplicateBatch = form.batchName.trim() && cycles.some((c) => sameName(c.batchName, form.batchName));
   const harvestMonths = harvestMonthsLabel(form.stockingDate, form.expectedHarvestDate);
 
   const submit = async (e) => {
     e.preventDefault();
-    if (duplicateBatch) {
-      toast.error(`"${form.batchName.trim()}" already exists in this fishpond. Use a different batch name.`);
-      return;
-    }
     if (form.stockingDate < localTodayISO()) {
       toast.error('Stocking date cannot be in the past.');
       return;
@@ -159,17 +165,19 @@ export default function FishpondDetail() {
       {fishpond.status === 'approved' && (
         <>
           <Card
-            title="Production Cycles (Batches)"
+            title="Production Cycles"
             action={
-              <Button size="sm" icon="plus" onClick={openCycleModal}>
-                Start New Cycle
-              </Button>
+              <div className="flex items-center gap-3">
+                {runningCycle && <span className="text-xs text-slate-500">Harvest {cycleName(runningCycle)} first to start a new cycle</span>}
+                <Button size="sm" icon="plus" onClick={openCycleModal} disabled={Boolean(runningCycle)}>
+                  Start New Cycle
+                </Button>
+              </div>
             }
           >
             <DataTable
               columns={[
-                { key: 'batchName', header: 'Batch', render: (c) => c.batchName || '—' },
-                { key: 'species', header: 'Species', render: (c) => `${c.species?.name} (${WATER_TYPE_LABEL[c.species?.waterType]})`, value: (c) => c.species?.name },
+                { key: 'batchName', header: 'Cycle', render: cycleName, value: (c) => c.cycleNumber || 0 },
                 { key: 'stockingDate', header: 'Stocking Date', render: (c) => formatDate(c.stockingDate) },
                 { key: 'expectedHarvestDate', header: 'Est. Harvest', render: (c) => (c.expectedHarvestDate ? formatDate(c.expectedHarvestDate) : '—') },
                 { key: 'initialCount', header: 'Initial Count', render: (c) => formatNumber(c.initialCount) },
@@ -199,10 +207,10 @@ export default function FishpondDetail() {
             action={
               <div className="flex items-center gap-2">
                 <Select value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)} className="w-44">
-                  <option value="">All batches</option>
+                  <option value="">All cycles</option>
                   {cycles.map((c) => (
                     <option key={c._id} value={c._id}>
-                      {fishLabel(c)}
+                      {cycleName(c)}
                     </option>
                   ))}
                 </Select>
@@ -215,14 +223,34 @@ export default function FishpondDetail() {
             <DataTable
               columns={[
                 { key: 'date', header: 'Date', render: (r) => formatDate(r.date) },
-                { key: 'batch', header: 'Batch', render: (r) => (r.cycle ? fishLabel(r.cycle) : '—'), value: (r) => r.cycle?.batchName },
-                { key: 'quantity', header: 'Fingerlings', render: (r) => formatNumber(r.quantity) },
+                {
+                  key: 'batch',
+                  header: 'Batch',
+                  render: (r) => (
+                    <div>
+                      <p>{r.batchNumber ? `Batch ${r.batchNumber}` : '—'}</p>
+                      {r.cycle && <p className="text-[11px] text-slate-500">{cycleName(r.cycle)}</p>}
+                    </div>
+                  ),
+                  value: (r) => `${cycleName(r.cycle)} ${String(r.batchNumber || 0).padStart(4, '0')}`,
+                },
+                {
+                  key: 'species',
+                  header: 'Species',
+                  render: (r) => {
+                    const s = r.species || r.cycle?.species;
+                    return s ? `${s.name} (${WATER_TYPE_LABEL[s.waterType]})` : '—';
+                  },
+                  value: (r) => (r.species || r.cycle?.species)?.name,
+                },
+                { key: 'quantity', header: 'Fingerlings', render: (r) => (r.quantity ? formatNumber(r.quantity) : '—') },
                 { key: 'source', header: 'Source / Supplier', render: (r) => r.source || '—' },
                 { key: 'notes', header: 'Notes', render: (r) => r.notes || '—' },
                 {
                   key: 'actions',
                   header: '',
-                  render: (r) => <IconButton icon="trash" label="Delete record" tone="danger" onClick={() => removeStocking(r)} />,
+                  render: (r) =>
+                    r.isInitial ? null : <IconButton icon="trash" label="Delete record" tone="danger" onClick={() => removeStocking(r)} />,
                 },
               ]}
               rows={[...shownStocking].reverse()}
@@ -236,6 +264,10 @@ export default function FishpondDetail() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Start New Production Cycle">
         <form onSubmit={submit} className="space-y-4">
+          <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
+            This will be <span className="font-semibold">Cycle #{nextCycleNumber(cycles)}</span> of {fishpond.name}. Its starting stock is saved as Batch 1 in the
+            Stocking Records.
+          </p>
           <Field label="Species" required>
             <Select required value={form.speciesId} onChange={(e) => setForm({ ...form, speciesId: e.target.value })}>
               <option value="">Select species</option>
@@ -245,14 +277,6 @@ export default function FishpondDetail() {
                 </option>
               ))}
             </Select>
-          </Field>
-          <Field
-            label="Batch Name"
-            required
-            error={duplicateBatch ? 'This batch name is already used in this fishpond.' : undefined}
-            hint="Each batch in a fishpond needs its own name"
-          >
-            <Input required value={form.batchName} onChange={(e) => setForm({ ...form, batchName: e.target.value })} />
           </Field>
           <Field label="Stocking Date" required hint="Today or a later date">
             <Input
@@ -300,7 +324,7 @@ export default function FishpondDetail() {
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" loading={saving} disabled={Boolean(duplicateBatch) || room?.available === 0}>
+            <Button type="submit" loading={saving} disabled={room?.available === 0}>
               Start Cycle
             </Button>
           </div>
@@ -312,7 +336,8 @@ export default function FishpondDetail() {
         onClose={() => setStockModalOpen(false)}
         title={`Add Stock — ${fishpond.name}`}
         api={stockingApi}
-        fields={STOCKING_FIELDS}
+        fields={stockingFields(species)}
+        showCyclePicker={activeCycles.length > 1}
         fishpondId={id}
         activeCycles={activeCycles}
         onSaved={loadStocking}

@@ -209,16 +209,28 @@ const getApplication = asyncHandler(async (req, res) => {
   res.json({ success: true, application });
 });
 
-// PATCH /api/fisherfolk/:id/approve
+// Next free Registration No. for this year: FR-2026-0001, FR-2026-0002, …
+async function nextRegistrationNo() {
+  const prefix = `FR-${new Date().getFullYear()}-`;
+  let n = (await FisherfolkApplication.countDocuments({ registrationNo: { $regex: `^${prefix}` } })) + 1;
+  while (await FisherfolkApplication.exists({ registrationNo: `${prefix}${String(n).padStart(4, '0')}` })) n += 1;
+  return `${prefix}${String(n).padStart(4, '0')}`;
+}
+
+// PATCH /api/fisherfolk/:id/approve — the Registration No. is given
+// automatically when the staff does not enter one.
 const approveApplication = asyncHandler(async (req, res) => {
   const app = await FisherfolkApplication.findById(req.params.id);
   if (!app) throw new ApiError(404, 'Application not found');
   if (app.status !== 'pending') throw new ApiError(400, 'Only applications under review can be approved');
 
-  const registrationNo = text(req.body.registrationNo);
-  if (!registrationNo) throw new ApiError(400, 'Registration No. is required');
-  const taken = await FisherfolkApplication.exists({ _id: { $ne: app._id }, registrationNo });
-  if (taken) throw new ApiError(400, 'That Registration No. is already used by another fisherfolk');
+  let registrationNo = text(req.body.registrationNo);
+  if (registrationNo) {
+    const taken = await FisherfolkApplication.exists({ _id: { $ne: app._id }, registrationNo });
+    if (taken) throw new ApiError(400, 'That Registration No. is already used by another fisherfolk');
+  } else {
+    registrationNo = await nextRegistrationNo();
+  }
 
   app.status = 'approved';
   app.registrationNo = registrationNo;

@@ -16,7 +16,7 @@ function buildInitialForm(fields) {
  * growth) against one of the fishpond's active batches. `fields` describe the
  * inputs; a field with `loadOptions(fishpondId)` gets its choices on open.
  */
-export default function RecordFormModal({ open, onClose, title, api, fields, fishpondId, activeCycles, onSaved }) {
+export default function RecordFormModal({ open, onClose, title, api, fields, fishpondId, activeCycles, onSaved, showCyclePicker = true }) {
   const [form, setForm] = useState(() => buildInitialForm(fields));
   const [selectedCycle, setSelectedCycle] = useState('');
   const [fieldOptions, setFieldOptions] = useState({});
@@ -60,6 +60,7 @@ export default function RecordFormModal({ open, onClose, title, api, fields, fis
     <Modal open={open} onClose={onClose} title={title}>
       <form onSubmit={submit} className="space-y-4">
         {activeCycles.length > 0 ? (
+          showCyclePicker && (
           <Field label="Fish Name" required>
             <Select value={selectedCycle} onChange={(e) => setSelectedCycle(e.target.value)}>
               {activeCycles.map((c) => (
@@ -69,6 +70,7 @@ export default function RecordFormModal({ open, onClose, title, api, fields, fis
               ))}
             </Select>
           </Field>
+          )
         ) : (
           <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
             No active production cycle for this fishpond. Start one from the fishpond&apos;s detail page first.

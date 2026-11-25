@@ -1,5 +1,6 @@
 const ProductionCycle = require('../models/ProductionCycle');
 const Species = require('../models/Species');
+const StockingRecord = require('../models/StockingRecord');
 const asyncHandler = require('../utils/asyncHandler');
 const { ApiError } = require('../middleware/errorHandler');
 const { loadFishpondWithAccess, loadCycleWithAccess } = require('../utils/access');
@@ -7,8 +8,6 @@ const { logActivity } = require('../utils/activityLog');
 const { computeHarvestEstimate } = require('../utils/calculations');
 const { assertWithinCapacity, getPondFishCount } = require('../utils/capacity');
 const { assertNotPastDate, dateOnly } = require('../utils/validation');
-
-const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // GET /api/fishponds/:fishpondId/cycles?status=&speciesId=
 const listCycles = asyncHandler(async (req, res) => {
@@ -28,7 +27,13 @@ const createCycle = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Fishpond must be approved before starting a production cycle');
   }
 
-  const { speciesId, batchName, stockingDate, expectedHarvestDate, initialCount, notes } = req.body;
+  // One cycle at a time: the current one has to be harvested first.
+  const running = await ProductionCycle.findOne({ fishpond: fishpond._id, status: 'active' });
+  if (running) {
+    throw new ApiError(400, `${running.batchName || 'The current cycle'} of ${fishpond.name} is still active. Harvest it first before starting a new cycle.`);
+  }
+
+  const { speciesId, stockingDate, expectedHarvestDate, initialCount, notes } = req.body;
   if (!speciesId || !stockingDate || !expectedHarvestDate || !initialCount) {
     throw new ApiError(400, 'Species, stocking date, estimated harvest date, and initial count are required');
   }
@@ -41,24 +46,36 @@ const createCycle = asyncHandler(async (req, res) => {
   const species = await Species.findById(speciesId);
   if (!species) throw new ApiError(404, 'Species not found');
 
-  const name = String(batchName || '').trim();
-  if (name) {
-    const duplicate = await ProductionCycle.exists({ fishpond: fishpond._id, batchName: new RegExp(`^${escapeRegex(name)}$`, 'i') });
-    if (duplicate) throw new ApiError(400, `${fishpond.name} already has a batch named "${name}". Use a different batch name.`);
-  }
   await assertWithinCapacity(fishpond, initialCount);
+
+  // Cycles are numbered automatically per fishpond: Cycle #1, #2, …
+  const existing = await ProductionCycle.find({ fishpond: fishpond._id }).select('cycleNumber batchName');
+  let cycleNumber = Math.max(existing.length, ...existing.map((c) => c.cycleNumber || 0)) + 1;
+  while (existing.some((c) => (c.batchName || '').toLowerCase() === `cycle #${cycleNumber}`)) cycleNumber += 1;
 
   const cycle = await ProductionCycle.create({
     fishpond: fishpond._id,
     species: species._id,
-    batchName: name || undefined,
+    cycleNumber,
+    batchName: `Cycle #${cycleNumber}`,
     stockingDate,
     expectedHarvestDate,
     initialCount,
     notes,
   });
 
-  await logActivity(req, { action: 'CREATE', targetType: 'ProductionCycle', targetId: cycle._id, details: `Started cycle for ${fishpond.name} (${species.name})` });
+  // Batch 1 of the stocking records is the cycle's own initial stock.
+  await StockingRecord.create({
+    cycle: cycle._id,
+    fishpond: fishpond._id,
+    date: stockingDate,
+    species: species._id,
+    batchNumber: 1,
+    isInitial: true,
+    recordedBy: req.user._id,
+  });
+
+  await logActivity(req, { action: 'CREATE', targetType: 'ProductionCycle', targetId: cycle._id, details: `Started Cycle #${cycleNumber} for ${fishpond.name} (${species.name})` });
 
   res.status(201).json({ success: true, cycle });
 });

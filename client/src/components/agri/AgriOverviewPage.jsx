@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { reportApi } from '../../api/misc';
-import { fishpondApi } from '../../api/fishponds';
 import { useSpeciesList } from '../../hooks/useSpeciesList';
 import Card from '../../components/ui/Card';
 import DataTable from '../../components/ui/DataTable';
@@ -8,7 +7,7 @@ import Spinner from '../../components/ui/Spinner';
 import { Select } from '../../components/ui/FormField';
 import SpeciesFilterSelect from '../charts/SpeciesFilterSelect';
 import LineTrendChart from '../charts/LineTrendChart';
-import { withExistingBarangays } from '../../utils/barangays';
+import { FISHPOND_BARANGAYS } from '../../utils/barangays';
 import { READINESS_LABEL } from '../../utils/format';
 
 /**
@@ -21,13 +20,8 @@ export default function AgriOverviewPage({ title, description, columns, chart })
   const [barangay, setBarangay] = useState('');
   const [speciesId, setSpeciesId] = useState('');
   const [readiness, setReadiness] = useState('');
-  const [barangays, setBarangays] = useState([]);
   const [allCycles, setAllCycles] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fishpondApi.list({ status: 'approved' }).then((all) => setBarangays(withExistingBarangays(all.map((f) => f.barangay))));
-  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -72,7 +66,7 @@ export default function AgriOverviewPage({ title, description, columns, chart })
         <div className="flex flex-wrap items-center gap-3">
           <Select value={barangay} onChange={(e) => setBarangay(e.target.value)} className="w-48">
             <option value="">All barangays</option>
-            {barangays.map((b) => (
+            {FISHPOND_BARANGAYS.map((b) => (
               <option key={b} value={b}>{b}</option>
             ))}
           </Select>

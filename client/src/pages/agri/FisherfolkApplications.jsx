@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import toast from '../../utils/notify';
+import toast, { confirm } from '../../utils/notify';
 import { fisherfolkApi } from '../../api/fisherfolk';
 import { apiErrorMessage } from '../../api/client';
 import { downloadFile } from '../../utils/download';
-import { localTodayISO } from '../../utils/dates';
 import { formatDate } from '../../utils/format';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
@@ -11,19 +10,17 @@ import Button from '../../components/ui/Button';
 import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
 import FishpondPhoto from '../../components/ui/FishpondPhoto';
-import { Field, Input, Select, Textarea } from '../../components/ui/FormField';
+import { Field, Select, Textarea } from '../../components/ui/FormField';
 import ApplicationSummary from '../../components/fisherfolk/ApplicationSummary';
 import { APPLICATION_STATUS, REGISTRATION_TYPES, labelOf, fullName } from '../../utils/fisherfolk';
 
-const EMPTY_APPROVAL = { registrationNo: '', registrationDate: localTodayISO(), reviewedBy: '', certifiedBy: '', approvedBy: '' };
 
 export default function FisherfolkApplications() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('pending');
   const [selected, setSelected] = useState(null);
-  const [mode, setMode] = useState('view'); // view | approve | reject
-  const [approval, setApproval] = useState(EMPTY_APPROVAL);
+  const [mode, setMode] = useState('view'); // view | reject
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -44,16 +41,15 @@ export default function FisherfolkApplications() {
   const open = (a) => {
     setSelected(a);
     setMode('view');
-    setApproval(EMPTY_APPROVAL);
     setReason('');
   };
   const close = () => setSelected(null);
 
-  const approve = async (e) => {
-    e.preventDefault();
+  const approve = async () => {
+    if (!(await confirm(`Fisherfolk application of ${fullName(selected)}`, { title: 'Do you want to approve this?', danger: false }))) return;
     setBusy(true);
     try {
-      await fisherfolkApi.approve(selected._id, approval);
+      await fisherfolkApi.approve(selected._id, {});
       toast.success('Application approved');
       close();
       load();
@@ -166,42 +162,13 @@ export default function FisherfolkApplications() {
                   <Button variant="danger" icon="close" onClick={() => setMode('reject')}>
                     Return for Correction
                   </Button>
-                  <Button variant="accent" icon="check" onClick={() => setMode('approve')}>
+                  <Button variant="accent" icon="check" loading={busy} onClick={approve}>
                     Approve
                   </Button>
                 </>
               )}
             </div>
           </div>
-        )}
-
-        {selected && mode === 'approve' && (
-          <form onSubmit={approve} className="space-y-4">
-            <p className="text-sm text-slate-600">Fill in the &quot;For Authorized Personnel Only&quot; part of the form. These appear on the printed application.</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Registration No." required>
-                <Input required value={approval.registrationNo} onChange={(e) => setApproval({ ...approval, registrationNo: e.target.value })} maxLength={40} />
-              </Field>
-              <Field label="Registration Date" required>
-                <Input type="date" required value={approval.registrationDate} onChange={(e) => setApproval({ ...approval, registrationDate: e.target.value })} />
-              </Field>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="Reviewed by" hint="MFARMC Chairman">
-                <Input value={approval.reviewedBy} onChange={(e) => setApproval({ ...approval, reviewedBy: e.target.value })} maxLength={80} />
-              </Field>
-              <Field label="Certified correct by" hint="MFARMC Coordinator">
-                <Input value={approval.certifiedBy} onChange={(e) => setApproval({ ...approval, certifiedBy: e.target.value })} maxLength={80} />
-              </Field>
-              <Field label="Approved by" hint="Municipal Agriculturist">
-                <Input value={approval.approvedBy} onChange={(e) => setApproval({ ...approval, approvedBy: e.target.value })} maxLength={80} />
-              </Field>
-            </div>
-            <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
-              <Button variant="secondary" onClick={() => setMode('view')}>Back</Button>
-              <Button type="submit" variant="accent" icon="check" loading={busy}>Approve Registration</Button>
-            </div>
-          </form>
         )}
 
         {selected && mode === 'reject' && (
